@@ -20,7 +20,7 @@ type:
     | 'float'
     | 'bool'
     | IDENT
-    | '[]';
+    | type '[]';
 
 fnDecl:
     beforeFunc type IDENT '(' formalsOrEmpty ')' stmtBlock
@@ -205,9 +205,9 @@ annotationWithLabel:
     '@' IDENT ':' annotationExpr
     | '@' annotationExpr;
 
-annotationPre: 'pre' annotationExpr;
+annotationPre: '@pre' annotationExpr;
 
-annotationPost: 'post' annotationExpr;
+annotationPost: '@post' annotationExpr;
 
 /* lexer */
 INT_CONSTANT: [0-9]+;
@@ -216,3 +216,5 @@ IDENT: [a-zA-Z] [a-zA-Z0-9_]*;
 
 COMMENT: '/*' .*? '*/' -> skip;
 LINE_COMMENT: '//' ~[\r\n]* -> skip;
+
+WS: [ \t\r\n\u000C] -> skip;
