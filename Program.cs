@@ -25,7 +25,7 @@ bool LinearSearch(int[] a, int l, int u, int e) {
         ITokenSource lexer = new piVCLexer(stream);
         ITokenStream tokens = new CommonTokenStream(lexer);
         piVCParser parser = new piVCParser(tokens);
-        // parser.BuildParseTree = true;
+        parser.BuildParseTree = true;
         IParseTree tree = parser.main();
 
         Console.WriteLine("Parsed. If something goes wrong, you'll see it.");
