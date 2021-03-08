@@ -82,8 +82,7 @@ whileStmt: 'while' beforeBranch '(' expr ')' stmt;
 
 forCondition:
     expr? ';' expr ';' expr?
-    | varDeclAndAssign ';' expr ';' expr?
-    ;
+    | varDeclAndAssign ';' expr ';' expr?;
 
 forStmt: 'for' beforeBranch '(' forCondition ')' stmt;
 
