@@ -22,9 +22,9 @@ bool LinearSearch(int[] a, int l, int u, int e) {
 }
 ";
         ICharStream stream = CharStreams.fromString(input);
-        ITokenSource lexer = new piVCLexer(stream);
+        ITokenSource lexer = new piLexer(stream);
         ITokenStream tokens = new CommonTokenStream(lexer);
-        piVCParser parser = new piVCParser(tokens);
+        piParser parser = new piParser(tokens);
         parser.BuildParseTree = true;
         IParseTree tree = parser.main();
 
