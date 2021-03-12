@@ -16,8 +16,9 @@ A lot of work needs to do, include the followings and something other.
 
 ### Level I: You have to doazee
 
-- [ ] The grammar is not totally correct and sufficiently tested.
+- [x] The grammar is not totally correct and sufficiently tested.
 - [ ] The design and implementation of CFG.
+  - [ ] The logger of CFG.
 - [ ] The framework of verification algorithm and a baseline implementation.
 - [ ] The documentation for code, task and environments.
 - [ ] The testcases and judging system.

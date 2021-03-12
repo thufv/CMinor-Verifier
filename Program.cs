@@ -47,7 +47,7 @@ namespace piVC_thu {
             piParser parser = new piParser(tokens);
             parser.BuildParseTree = true;
             IParseTree tree = parser.main();
-            MainVisitor visitor = new MainVisitor();
+            Visitor visitor = new Visitor();
             visitor.Visit(tree);
             Console.WriteLine("Parsed. If something goes wrong, you'll see it.");
         }
