@@ -2,12 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net4.8</TargetFramework>
     <RootNamespace>piVC_thu</RootNamespace>
+    <Antlr4UseCSharpGenerator>True</Antlr4UseCSharpGenerator>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.1" />
+    <PackageReference Include="Antlr4.CodeGenerator" Version="4.6.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
   </ItemGroup>
 

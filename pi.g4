@@ -1,5 +1,7 @@
 grammar pi;
 
+@header {#pragma warning disable 3021}
+
 main: decl* EOF;
 
 decl:
