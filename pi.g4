@@ -4,7 +4,7 @@ grammar pi;
 
 main: decl* EOF;
 
-decl: varDeclOutsideOfFunc | fnDecl | predicate | classDecl;
+decl: fnDecl | predicate | classDecl;
 
 type: atomicType '[]'? | IDENT;
 
@@ -45,8 +45,6 @@ varOutSideOfFunc: type IDENT;
 paramVar: type IDENT;
 
 stmtBlock: '{' stmt* '}';
-
-varDeclOutsideOfFunc: varOutSideOfFunc ';';
 
 varDecl: var ';';
 
