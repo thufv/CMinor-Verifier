@@ -2,52 +2,21 @@ grammar pi;
 
 @header {#pragma warning disable 3021}
 
+/* top level */
+
 main: decl* EOF;
 
-decl: fnDecl | predicate | classDecl;
-
-type: atomicType '[]'? | IDENT;
-
-atomicType: 'int' | 'float' | 'bool';
+decl: fnDecl | predicate | structDecl;
 
 fnDecl:
-	beforeFunc type IDENT '(' formalsOrEmpty ')' stmtBlock
-	| beforeFunc 'void' IDENT '(' formalsOrEmpty ')' stmtBlock;
+	beforeFunc (type | 'void') IDENT '(' (var (',' var)*)? ')' stmtBlock;
 
-classDecl: 'struct' IDENT '{' varDecl* '}';
-
-beforeFunc:
-	| termination annotationPre annotationPost
-	| annotationPre annotationPost
-	| annotationPre termination annotationPost
-	| annotationPre annotationPost termination
-	| termination annotationPost annotationPre
-	| annotationPost annotationPre
-	| annotationPost termination annotationPre
-	| annotationPost annotationPre termination;
-
-beforeBranch:
-	| termination annotationWithLabel
-	| annotationWithLabel termination
-	| annotationWithLabel;
+structDecl: 'struct' IDENT '{' varDecl* '}';
 
 predicate:
-	'predicate' IDENT '(' formalsOrEmpty ')' ':=' expr ';';
+	'predicate' IDENT '(' (var (',' var)*)? ')' ':=' expr ';';
 
-formalsOrEmpty: | formals;
-
-formals: paramVar | formals ',' paramVar;
-
-var: type IDENT;
-
-varOutSideOfFunc: type IDENT;
-
-paramVar: type IDENT;
-
-stmtBlock: '{' stmt* '}';
-
-varDecl: var ';';
-
+/* about statement */
 stmt:
 	varDecl
 	| varDeclAndAssign ';'
@@ -61,21 +30,19 @@ stmt:
 	| assertStmt
 	| stmtBlock;
 
+stmtBlock: '{' stmt* '}';
+
 varDeclAndAssign: var ':=' expr;
 
 ifStmt: 'if' '(' expr ')' stmt ('else' stmt)?;
 
 whileStmt: 'while' beforeBranch '(' expr ')' stmt;
 
+forStmt: 'for' beforeBranch '(' forCondition ')' stmt;
+
 forCondition:
 	expr? ';' expr ';' expr?
 	| varDeclAndAssign ';' expr ';' expr?;
-
-forStmt: 'for' beforeBranch '(' forCondition ')' stmt;
-
-termination: '#' '(' terminationArgs ')';
-
-terminationArgs: expr | terminationArgs ',' expr;
 
 returnStmt: 'return' expr? ';';
 
@@ -88,29 +55,26 @@ assignStmt:
 	| expr '[' expr ']' ':=' expr	# SubAssign
 	| IDENT '.' IDENT ':=' expr		# MemAssign;
 
-commaSeperatedListOfVars:
-	IDENT ',' commaSeperatedListOfVars
-	| IDENT;
-
+/* about expression */
 expr:
-	IDENT														# IdentExpr
-	| constant													# ConstExpr
-	| IDENT '(' callInterior ')'								# CallExpr
-	| '(' expr ')'												# ParExpr
-	| expr '[' expr ']'											# SubExpr
-	| 'new' type '[' expr ']'									# NewArrayExpr
-	| IDENT '.' IDENT											# MemExpr
-	| expr '{' expr '<-' expr '}'								# ArrUpdExpr
-	| ('!' | '-') expr											# UnaryExpr
-	| expr ('*' | '/' | 'div' | '%') expr						# MulExpr
-	| expr ('+' | '-') expr										# AddExpr
-	| expr ('<' | '<=' | '>' | '>=') expr						# InequExpr
-	| expr ('=' | '!=') expr									# EquExpr
-	| ('forall' | 'exists') commaSeperatedListOfVars '.' expr	# QuantifiedExpr
-	| expr '&&' expr											# AndExpr
-	| expr '||' expr											# OrExpr
-	| expr ('<->' | '->') expr									# ArrowExpr
-	| '|' expr '|'												# LengthExpr;
+	IDENT												# IdentExpr
+	| constant											# ConstExpr
+	| IDENT '(' callInterior ')'						# CallExpr
+	| '(' expr ')'										# ParExpr
+	| expr '[' expr ']'									# SubExpr
+	| 'new' type '[' expr ']'							# NewArrayExpr
+	| IDENT '.' IDENT									# MemExpr
+	| expr '{' expr '<-' expr '}'						# ArrUpdExpr
+	| ('!' | '-') expr									# UnaryExpr
+	| expr ('*' | '/' | 'div' | '%') expr				# MulExpr
+	| expr ('+' | '-') expr								# AddExpr
+	| expr ('<' | '<=' | '>' | '>=') expr				# InequExpr
+	| expr ('=' | '!=') expr							# EquExpr
+	| ('forall' | 'exists') IDENT (',' IDENT)* '.' expr	# QuantifiedExpr
+	| expr '&&' expr									# AndExpr
+	| expr '||' expr									# OrExpr
+	| expr ('<->' | '->') expr							# ArrowExpr
+	| '|' expr '|'										# LengthExpr;
 
 // This rule is actually the same as the CallExpr alternative rule, it is separated as an
 // independent rule because ANTLR cannot handle mutually left-recursiveness.
@@ -118,15 +82,43 @@ call: expr '(' callInterior ')';
 
 callInterior: | (expr ',')* expr;
 
+/* annotation */
+annotationWithLabel: '@' IDENT ':' expr | '@' expr;
+
+annotationPre: '@pre' expr;
+
+annotationPost: '@post' expr;
+
+beforeFunc:
+	termination annotationPre annotationPost
+	| annotationPre annotationPost
+	| annotationPre termination annotationPost
+	| annotationPre annotationPost termination
+	| termination annotationPost annotationPre
+	| annotationPost annotationPre
+	| annotationPost termination annotationPre
+	| annotationPost annotationPre termination;
+
+beforeBranch:
+	termination annotationWithLabel
+	| annotationWithLabel termination
+	| annotationWithLabel;
+
+termination: '#' '(' terminationArgs ')';
+
+terminationArgs: expr | terminationArgs ',' expr;
+
+/* about type */
+type: atomicType '[]'? | IDENT;
+
+atomicType: 'int' | 'float' | 'bool';
+
+/* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';
 
-annotation: expr;
+var: type IDENT;
 
-annotationWithLabel: '@' IDENT ':' annotation | '@' annotation;
-
-annotationPre: '@pre' annotation;
-
-annotationPost: '@post' annotation;
+varDecl: var ';';
 
 /* lexer */
 INT_CONSTANT: [0-9]+;
