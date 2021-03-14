@@ -361,3 +361,6 @@ FodyWeavers.xsd
 
 # ANTLR VSCode extension temporary generated files
 *.antlr/
+
+# Pi programs for test
+*.pi
