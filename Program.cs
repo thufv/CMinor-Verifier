@@ -8,15 +8,17 @@ using Antlr4.Runtime.Tree;
 using CommandLine;
 using CommandLine.Text;
 
-namespace piVC_thu {
+namespace piVC_thu
+{
     /// <summary>
     /// The main class of the whole verifying compiler.
     /// </summary>
     class Program
     {
-        class Options {
+        class Options
+        {
             [Value(0, MetaName = "source", Required = true, HelpText = "The path to the source pi file.")]
-            public String sourcePath { get; set; }
+            public String sourcePath { get; set; } = default!;
 
             [Usage(ApplicationAlias = "piVC-thu")]
             public static IEnumerable<Example> Examples
@@ -39,7 +41,8 @@ namespace piVC_thu {
                 .WithParsed(RunOptions);
         }
 
-        static void RunOptions(Options opts) {
+        static void RunOptions(Options opts)
+        {
             StreamReader reader = File.OpenText(opts.sourcePath);
             AntlrInputStream stream = new AntlrInputStream(reader);
             ITokenSource lexer = new piLexer(stream);

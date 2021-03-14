@@ -6,15 +6,15 @@ main: decl* EOF;
 
 decl: varDeclOutsideOfFunc | fnDecl | predicate | classDecl;
 
-declInsideClass: varDecl | predicate;
+type: atomicType '[]'? | IDENT;
 
-type: 'int' | 'float' | 'bool' | IDENT | type '[]';
+atomicType: 'int' | 'float' | 'bool';
 
 fnDecl:
 	beforeFunc type IDENT '(' formalsOrEmpty ')' stmtBlock
 	| beforeFunc 'void' IDENT '(' formalsOrEmpty ')' stmtBlock;
 
-classDecl: 'struct' IDENT '{' declInsideClass* '}';
+classDecl: 'struct' IDENT '{' varDecl* '}';
 
 beforeFunc:
 	| termination annotationPre annotationPost
@@ -53,7 +53,8 @@ varDecl: var ';';
 stmt:
 	varDecl
 	| varDeclAndAssign ';'
-	| expr? ';'
+	| call ';'
+	| assignStmt
 	| ifStmt
 	| whileStmt
 	| forStmt
@@ -84,6 +85,11 @@ breakStmt: 'break' ';';
 
 assertStmt: annotationWithLabel ';';
 
+assignStmt:
+	IDENT ':=' expr					# VarAssign
+	| expr '[' expr ']' ':=' expr	# SubAssign
+	| IDENT '.' IDENT ':=' expr		# MemAssign;
+
 commaSeperatedListOfVars:
 	IDENT ',' commaSeperatedListOfVars
 	| IDENT;
@@ -91,10 +97,10 @@ commaSeperatedListOfVars:
 expr:
 	IDENT														# IdentExpr
 	| constant													# ConstExpr
-	| expr '(' callInterior ')'									# CallExpr
+	| IDENT '(' callInterior ')'								# CallExpr
 	| '(' expr ')'												# ParExpr
 	| expr '[' expr ']'											# SubExpr
-	| 'new' type '[' expr ']'									# NewExpr
+	| 'new' type '[' expr ']'									# NewArrayExpr
 	| IDENT '.' IDENT											# MemExpr
 	| expr '{' expr '<-' expr '}'								# ArrUpdExpr
 	| ('!' | '-') expr											# UnaryExpr
@@ -106,10 +112,11 @@ expr:
 	| expr '&&' expr											# AndExpr
 	| expr '||' expr											# OrExpr
 	| expr ('<->' | '->') expr									# ArrowExpr
-	| '|' expr '|'												# LengthExpr
-	| IDENT ':=' expr											# AssignExpr
-	| expr '[' expr ']' ':='									# SubAssignExpr
-	| IDENT '.' IDENT ':='										# MemAssignExpr;
+	| '|' expr '|'												# LengthExpr;
+
+// This rule is actually the same as the CallExpr alternative rule, it is separated as an
+// independent rule because ANTLR cannot handle mutually left-recursiveness.
+call: expr '(' callInterior ')';
 
 callInterior: | (expr ',')* expr;
 

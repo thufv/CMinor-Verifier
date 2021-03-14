@@ -1,17 +1,19 @@
 using System.Collections.Generic;
 
-namespace piVC_thu {
+namespace piVC_thu
+{
     // 这里的顶层设计主要是参考了 TrivialCompiler
 
-    public class Main {
+    class Main
+    {
         LinkedList<Function> functions = new LinkedList<Function>();
-        LinkedList<GlobalVar> globalVars = new LinkedList<GlobalVar>();
         LinkedList<Predicate> predicates = new LinkedList<Predicate>();
-        LinkedList<Class> classes = new LinkedList<Class>();
+        LinkedList<Struct> structs = new LinkedList<Struct>();
     }
 
 
-    public class Function {
+    class Function
+    {
         FunType type;
         string name;
 
@@ -21,19 +23,21 @@ namespace piVC_thu {
         LoopheadBlock loopheadBlock;
 
         LinkedList<Block> blocks;
+
+        // for verification
+        int rankingFunctionSize;
     }
 
-    // 是需要有 global variable 的，但我不确定是不是应该把它放到这里。。。
-    public class GlobalVar {
-        // TODO
-        
+    class Predicate
+    {
+        string name;
+        Expression expression;
     }
 
-    public class Predicate {
-        // TODO
-    }
-
-    public class Class {
-        // TODO
+    class Struct
+    {
+        string name;
+        LinkedList<MemberVariable> members;
+        Dictionary<string, MemberVariable> symbolTable;
     }
 }

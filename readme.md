@@ -17,9 +17,12 @@ A lot of work needs to do, include the followings and something other.
 ### Level I: You have to doazee
 
 - [x] The grammar is not totally correct and sufficiently tested.
+- [ ] A logger
 - [ ] The design and implementation of CFG.
   - [ ] The logger of CFG.
 - [ ] The framework of verification algorithm and a baseline implementation.
+  - [ ] The logger of basic paths and verification conditions.
+  - [ ] The writer of counter model.
 - [ ] The documentation for code, task and environments.
 - [ ] The testcases and judging system.
 

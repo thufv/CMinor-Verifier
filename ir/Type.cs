@@ -10,12 +10,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace piVC_thu {
     // 这里我们尝试拿 singleton design pattern 来简化繁琐的比较
-    public class Type {
+    class Type {
     }
 
-    public class VarType : Type, ReturnType{}
+    class VarType : Type, ReturnType{}
 
-    public sealed class IntType : VarType {
+    class AtomicType : VarType {}
+
+    public sealed class IntType : AtomicType {
         private static IntType singleton = new IntType();
 
         private IntType() {}
@@ -25,7 +27,7 @@ namespace piVC_thu {
         }
     }
 
-    public sealed class FloatType : VarType {
+    public sealed class FloatType : AtomicType {
         private static FloatType singleton = new FloatType();
 
         private FloatType() {}
@@ -35,38 +37,43 @@ namespace piVC_thu {
         }
     }
 
-    public class BoolType : VarType {
-        private static BoolType singleton = new BoolType();
+    class BoolType : AtomicType {
+        public bool annotated;
 
-        private BoolType() {}
+        private static BoolType nonAnnotatedSingleton = new BoolType();
+        private static BoolType annotatedSingleton = new BoolType(true);
 
-        public static BoolType Get() {
-            return singleton;
+        private BoolType(bool annotated = false) {
+            this.annotated = annotated;
+        }
+
+        public static BoolType Get(bool annotated = false) {
+            return annotated ? annotatedSingleton : nonAnnotatedSingleton;
         }
     }
 
-    public class ArrayType : VarType {
-        public VarType baseType;
+    class ArrayType : VarType {
+        public AtomicType atomicType;
         public int size;
 
-        private static Dictionary<Tuple<VarType, int>, ArrayType> singletons =
-            new Dictionary<Tuple<VarType, int>, ArrayType>();
+        private static Dictionary<Tuple<AtomicType, int>, ArrayType> singletons =
+            new Dictionary<Tuple<AtomicType, int>, ArrayType>();
 
-        private ArrayType(VarType baseType, int size) {
-            this.baseType = baseType;
+        private ArrayType(AtomicType atomicType, int size) {
+            this.atomicType = atomicType;
             this.size = size;
         }
 
-        public static ArrayType Get(VarType baseType, int size) {
-            var t = new Tuple<VarType, int>(baseType, size);
+        public static ArrayType Get(AtomicType atomicType, int size) {
+            var t = new Tuple<AtomicType, int>(atomicType, size);
             if (!singletons.ContainsKey(t)) {
-                singletons.Add(t, new ArrayType(baseType, size));
+                singletons.Add(t, new ArrayType(atomicType, size));
             }
             return singletons[t];
         }
     }
 
-    public class VoidType : ReturnType {
+    class VoidType : ReturnType {
         private static VoidType singleton = new VoidType();
         
         private VoidType() {}
@@ -76,10 +83,27 @@ namespace piVC_thu {
         }
     }
 
+    class StructType : VarType {
+        public Struct structDefinition;
+
+        private static Dictionary<Struct, StructType> singletons = new Dictionary<Struct, StructType>();
+
+        private StructType(Struct structDefinition) {
+            this.structDefinition = structDefinition;
+        }
+
+        public static StructType Get(Struct structDefinition) {
+            if (!singletons.ContainsKey(structDefinition)) {
+                singletons.Add(structDefinition, new StructType(structDefinition));
+            }
+            return singletons[structDefinition];
+        }
+    }
+
     // 这里是用了一个 interface 配合 implement 来实现了一个 "sum type"
     public interface ReturnType {}
 
-    public class FunType : Type {
+    class FunType : Type {
         public ReturnType returnType;
         public VarType[] argTypes;
 
