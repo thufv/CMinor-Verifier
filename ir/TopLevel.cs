@@ -6,38 +6,52 @@ namespace piVC_thu
 
     class Main
     {
-        LinkedList<Function> functions = new LinkedList<Function>();
-        LinkedList<Predicate> predicates = new LinkedList<Predicate>();
-        LinkedList<Struct> structs = new LinkedList<Struct>();
+        public LinkedList<Function> functions = new LinkedList<Function>();
+        public LinkedList<Predicate> predicates = new LinkedList<Predicate>();
+        public LinkedList<Struct> structs = new LinkedList<Struct>();
     }
 
 
     class Function
     {
-        FunType type;
-        string name;
+        public FunType type = default!;
+        public string name = default!;
 
-        BasicBlock statementBlock;
-        PreconditionBlock preconditionBlock;
-        PostconditionBlock postconditionBlock;
-        LoopheadBlock loopheadBlock;
+        public PreConditionBlock preConditionBlock = default!;
+        public PostConditionBlock postConditionBlock = default!;
 
-        LinkedList<Block> blocks;
+        // All blocks, containing precondition block and postcondition block.
+        // For minimization we don't need the following one,
+        // this is only for convenience.
+        public LinkedList<Block> blocks = new LinkedList<Block>();
 
-        // for verification
-        int rankingFunctionSize;
+        // public CallExpression apply(List<Expression> arguments) { TODO }
     }
 
     class Predicate
     {
-        string name;
-        Expression expression;
+        // a predicate can be regarded as a function,
+        // of which the return value is bool and the body
+        // is just one return statement.
+        public FunType type = default!;
+        public string name = default!;
+        public Expression expression = default!;
+
+        // public CallExpression apply(List<Expression> arguments) { TODO }
     }
 
     class Struct
     {
-        string name;
-        LinkedList<MemberVariable> members;
-        Dictionary<string, MemberVariable> symbolTable;
+        public StructType type;
+        public string name;
+
+        public Dictionary<string, MemberVariable> members;
+
+        public Struct(string name, Dictionary<string, MemberVariable> members)
+        {
+            this.name = name;
+            this.members = members;
+            this.type = StructType.Get(this);
+        }
     }
 }

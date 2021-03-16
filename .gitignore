@@ -364,3 +364,9 @@ FodyWeavers.xsd
 
 # Pi programs for test
 *.pi
+
+# personal experimental programs of namasikanam
+exp*
+
+# project settings for VS Code
+.vscode/

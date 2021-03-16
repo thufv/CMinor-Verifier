@@ -2,103 +2,120 @@ using System.Collections.Generic;
 
 namespace piVC_thu
 {
-    class Expression
+    abstract class Expression
     {
-        public Type type;
+        public VarType type = default!;
+        // "annotated" expression is the expression that contains a quantifier,
+        // which indicates that the expression must be regarded in annotation.
+        public bool annotated = false;
     }
 
-    class IdentifierExpression : Expression
+    sealed class IdentifierExpression : Expression
     {
-        public string identifier;
+        public Variable variable;
     }
 
-    class ConstantExpression : Expression { }
+    abstract class ConstantExpression : Expression { }
 
-    class IntConstantExpression : ConstantExpression
+    sealed class IntConstantExpression : ConstantExpression
     {
         public int constant;
     }
 
-    class CallExpression : Expression
+    sealed class FloatConstantExpression : ConstantExpression
+    {
+        public float constant;
+    }
+
+    sealed class BoolConstantExpression : ConstantExpression
+    {
+        public bool constant;
+    }
+
+    sealed class CallExpression : Expression
     {
         public Function function;
         public List<Expression> arguments;
     }
 
-    class SubscriptExpression : Expression
+    sealed class SubscriptExpression : Expression
     {
         public Expression array, subscript;
     }
 
-    class NewArrayExpression : Expression
+    sealed class NewArrayExpression : Expression
     {
         public Expression length;
     }
 
-    class MemberExpression : Expression
+    sealed class MemberExpression : Expression
     {
         public Struct host;
         public MemberVariable member;
     }
 
-    class ArrayUpdateExpression : Expression
+    sealed class ArrayUpdateExpression : Expression
     {
         public Expression array, index, rhs;
     }
 
-    class UnaryExpression : Expression
+    abstract class UnaryExpression : Expression
     {
         public Expression expression;
-        public Operator op;
     }
 
-    class BinaryExpression : UnaryExpression
+    sealed class NotExpression : UnaryExpression
+    {
+    }
+
+    sealed class NegExpression : UnaryExpression { }
+
+    abstract class BinaryExpression : Expression
     {
         public Expression le, re;
-        public Operator op;
     }
 
-    class MultiExpression : BinaryExpression { }
+    sealed class MultiExpression : BinaryExpression { }
 
-    class FloatDivExpression : BinaryExpression { }
+    sealed class FloatDivExpression : BinaryExpression { }
 
-    class DivExpression : BinaryExpression { }
+    sealed class DivExpression : BinaryExpression { }
 
-    class ModExpression : BinaryExpression { }
+    sealed class ModExpression : BinaryExpression { }
 
-    class AddExpression : BinaryExpression { }
+    sealed class AddExpression : BinaryExpression { }
 
-    class SubExpression : BinaryExpression { }
+    sealed class SubExpression : BinaryExpression { }
 
-    class LTExpression : BinaryExpression { }
+    sealed class LTExpression : BinaryExpression { }
 
-    class LEExpression : BinaryExpression { }
+    sealed class LEExpression : BinaryExpression { }
 
-    class GTExpression : BinaryExpression { }
+    sealed class GTExpression : BinaryExpression { }
 
-    class GEExpression : BinaryExpression { }
+    sealed class GEExpression : BinaryExpression { }
 
-    class EQExpression : BinaryExpression { }
+    sealed class EQExpression : BinaryExpression { }
 
-    class NEExpression : BinaryExpression { }
+    sealed class NEExpression : BinaryExpression { }
 
-    class QuantifiedExpression : Expression
+    abstract class QuantifiedExpression : Expression
     {
         HashSet<QuantifiedVariable> vars;
         Expression expression;
     }
 
-    class ForallQuantifiedExpression : QuantifiedExpression { }
+    sealed class ForallQuantifiedExpression : QuantifiedExpression { }
 
-    class ExistsQuantifiedExpression : QuantifiedExpression { }
+    sealed class ExistsQuantifiedExpression : QuantifiedExpression { }
 
-    class AndExpression : BinaryExpression { }
+    sealed class AndExpression : BinaryExpression { }
 
-    class OrExpression : BinaryExpression { }
+    sealed class OrExpression : BinaryExpression { }
 
-    class ImplicationExpression : BinaryExpression { }
+    sealed class ImplicationExpression : BinaryExpression { }
 
-    class IffExpression : BinaryExpression { }
+    sealed class IffExpression : BinaryExpression { }
 
-    class LengthExpression : Expression { }
+    sealed class LengthExpression : Expression { }
 }

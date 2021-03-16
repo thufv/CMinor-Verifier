@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 /**
  * To be honest,
@@ -8,92 +7,117 @@ using System.Diagnostics.CodeAnalysis;
  * There seems to be a lot other things that are needed to consider.
  */
 
-namespace piVC_thu {
+namespace piVC_thu
+{
     // 这里我们尝试拿 singleton design pattern 来简化繁琐的比较
-    class Type {
+    abstract class Type
+    {
     }
 
-    class VarType : Type, ReturnType{}
+    abstract class VarType : Type, ReturnType { }
 
-    class AtomicType : VarType {}
+    abstract class AtomicType : VarType { }
 
-    public sealed class IntType : AtomicType {
+    sealed class IntType : AtomicType
+    {
         private static IntType singleton = new IntType();
 
-        private IntType() {}
+        private IntType() { }
 
-        public static IntType Get() {
+        public static IntType Get()
+        {
             return singleton;
         }
     }
 
-    public sealed class FloatType : AtomicType {
+    sealed class FloatType : AtomicType
+    {
         private static FloatType singleton = new FloatType();
 
-        private FloatType() {}
+        private FloatType() { }
 
-        public static FloatType Get() {
+        public static FloatType Get()
+        {
             return singleton;
         }
     }
 
-    class BoolType : AtomicType {
+    sealed class BoolType : AtomicType
+    {
         public bool annotated;
 
         private static BoolType nonAnnotatedSingleton = new BoolType();
         private static BoolType annotatedSingleton = new BoolType(true);
 
-        private BoolType(bool annotated = false) {
+        private BoolType(bool annotated = false)
+        {
             this.annotated = annotated;
         }
 
-        public static BoolType Get(bool annotated = false) {
+        public static BoolType Get(bool annotated = false)
+        {
             return annotated ? annotatedSingleton : nonAnnotatedSingleton;
         }
     }
 
-    class ArrayType : VarType {
+    sealed class ArrayType : VarType
+    {
         public AtomicType atomicType;
-        public int size;
 
-        private static Dictionary<Tuple<AtomicType, int>, ArrayType> singletons =
-            new Dictionary<Tuple<AtomicType, int>, ArrayType>();
+        private static ArrayType intArraySingleton = new ArrayType(IntType.Get());
+        private static ArrayType boolArraySingleton = new ArrayType(BoolType.Get());
+        private static ArrayType floatArraySingleton = new ArrayType(FloatType.Get());
 
-        private ArrayType(AtomicType atomicType, int size) {
+        private ArrayType(AtomicType atomicType)
+        {
             this.atomicType = atomicType;
-            this.size = size;
         }
 
-        public static ArrayType Get(AtomicType atomicType, int size) {
-            var t = new Tuple<AtomicType, int>(atomicType, size);
-            if (!singletons.ContainsKey(t)) {
-                singletons.Add(t, new ArrayType(atomicType, size));
+        public static ArrayType Get(AtomicType atomicType)
+        {
+            switch (atomicType)
+            {
+                case IntType:
+                    return intArraySingleton;
+                case BoolType:
+                    return boolArraySingleton;
+                case FloatType:
+                    return floatArraySingleton;
+                default:
+                    throw new ArgumentException(
+                        message: "an atomic type that is not int, float, nor bool is found when constructing an array type. Probably a bug occurs.",
+                        paramName: nameof(atomicType));
             }
-            return singletons[t];
         }
     }
 
-    class VoidType : ReturnType {
+    sealed class VoidType : ReturnType
+    {
         private static VoidType singleton = new VoidType();
-        
-        private VoidType() {}
 
-        public static VoidType Get() {
+        private VoidType() { }
+
+        public static VoidType Get()
+        {
             return singleton;
         }
     }
 
-    class StructType : VarType {
+    sealed class StructType : VarType
+    {
         public Struct structDefinition;
 
         private static Dictionary<Struct, StructType> singletons = new Dictionary<Struct, StructType>();
 
-        private StructType(Struct structDefinition) {
+        private StructType(Struct structDefinition)
+        {
             this.structDefinition = structDefinition;
         }
 
-        public static StructType Get(Struct structDefinition) {
-            if (!singletons.ContainsKey(structDefinition)) {
+        public static StructType Get(Struct structDefinition)
+        {
+            if (!singletons.ContainsKey(structDefinition))
+            {
                 singletons.Add(structDefinition, new StructType(structDefinition));
             }
             return singletons[structDefinition];
@@ -101,34 +125,38 @@ namespace piVC_thu {
     }
 
     // 这里是用了一个 interface 配合 implement 来实现了一个 "sum type"
-    public interface ReturnType {}
+    interface ReturnType { }
 
-    class FunType : Type {
+    sealed class FunType : Type
+    {
         public ReturnType returnType;
-        public VarType[] argTypes;
+        public VarType[] paraTypes;
 
         private static LinkedList<FunType> singletons = new LinkedList<FunType>();
 
-        private FunType(ReturnType returnType, VarType[] argTypes) {
+        private FunType(ReturnType returnType, VarType[] paraTypes)
+        {
             this.returnType = returnType;
-            this.argTypes = argTypes;
+            this.paraTypes = paraTypes;
         }
 
-        public static FunType Get(ReturnType returnType, VarType[] argTypes) {
-            Func<FunType, bool> Equals = (FunType funType) => {
+        public static FunType Get(ReturnType returnType, VarType[] paraTypes)
+        {
+            Func<FunType, bool> Equals = (FunType funType) =>
+            {
                 if (returnType != funType.returnType) return false;
-                if (argTypes.Length != funType.argTypes.Length) return false;
-                for (int i = 0; i < funType.argTypes.Length; ++i)
-                    if (argTypes[i] != funType.argTypes[i])
+                if (paraTypes.Length != funType.paraTypes.Length) return false;
+                for (int i = 0; i < funType.paraTypes.Length; ++i)
+                    if (paraTypes[i] != funType.paraTypes[i])
                         return false;
                 return true;
             };
             foreach (FunType funType in singletons)
                 if (Equals(funType))
                     return funType;
-            
+
             // if there is no equal FunType to be find
-            FunType newFunType = new FunType(returnType, argTypes);
+            FunType newFunType = new FunType(returnType, paraTypes);
             singletons.AddLast(newFunType);
             return newFunType;
         }

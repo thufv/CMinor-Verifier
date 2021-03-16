@@ -1,44 +1,42 @@
 namespace piVC_thu
 {
-    // TODO: CFG 里需要有 declaration 嘛？我该怎么处理 declaration？
-
-    public abstract class Statement
+    abstract class Statement
     {
-        // A unique integer
+        // A globally unique integer
+        // 主要是为了做谓词分析
         public int location;
     }
 
     // 这里我突然不知道该怎么处理了，因为 assign 也可以嵌套？
     // assign 是不允许嵌套的，那为什么语法要写成这个德性呢……
 
-    public abstract class AssignStatement : Statement
+    abstract class AssignStatement : Statement
     {
-        public Expression rhs;
+        public Expression rhs = default!;
     }
 
-    class VariableAssign : AssignStatement
+    sealed class VariableAssignStatement : AssignStatement
     {
-        public LocalVariable variable;
+        public LocalVariable variable = default!;
     }
 
-    class SubscriptAssign : AssignStatement
+    sealed class SubscriptAssignStatement : AssignStatement
     {
-        public Expression array, subscript;
+        public Expression array = default!, index = default!;
     }
 
-    class MemberAssign : AssignStatement
+    sealed class ExpressionStatement : Statement
     {
-        public Struct host;
-        public MemberVariable member;
+        public Expression expression = default!;
     }
 
-    class Assert : Statement
+    sealed class AssertStatement : Statement
     {
-        public Expression annotation;
+        public Expression annotation = default!;
     }
 
-    class Assume : Statement
+    sealed class AssumeStatement : Statement
     {
-        public Expression annotation;
+        public Expression condition = default!;
     }
 }

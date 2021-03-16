@@ -6,60 +6,36 @@ grammar pi;
 
 main: decl* EOF;
 
-decl: fnDecl | predicate | structDecl;
+decl: funcDef | structDef | predDef;
 
-fnDecl:
-	beforeFunc (type | 'void') IDENT '(' (var (',' var)*)? ')' stmtBlock;
+funcDef:
+	beforeFunc (type | 'void') IDENT '(' (var (',' var)*)? ')' '{' stmt* '}';
 
-structDecl: 'struct' IDENT '{' varDecl* '}';
+structDef: 'struct' IDENT '{' var* '}';
 
-predicate:
+predDef:
 	'predicate' IDENT '(' (var (',' var)*)? ')' ':=' expr ';';
 
 /* about statement */
 stmt:
-	varDecl
-	| varDeclAndAssign ';'
-	| call ';'
-	| assignStmt
-	| ifStmt
-	| whileStmt
-	| forStmt
-	| breakStmt
-	| returnStmt
-	| assertStmt
-	| stmtBlock;
-
-stmtBlock: '{' stmt* '}';
-
-varDeclAndAssign: var ':=' expr;
-
-ifStmt: 'if' '(' expr ')' stmt ('else' stmt)?;
-
-whileStmt: 'while' beforeBranch '(' expr ')' stmt;
-
-forStmt: 'for' beforeBranch '(' forCondition ')' stmt;
-
-forCondition:
-	expr? ';' expr ';' expr?
-	| varDeclAndAssign ';' expr ';' expr?;
-
-returnStmt: 'return' expr? ';';
-
-breakStmt: 'break' ';';
-
-assertStmt: annotationWithLabel ';';
-
-assignStmt:
-	IDENT ':=' expr					# VarAssign
-	| expr '[' expr ']' ':=' expr	# SubAssign
-	| IDENT '.' IDENT ':=' expr		# MemAssign;
+	var (':=' expr)? ';'														# VarDeclStmt
+	| expr ';'																	# ExprStmt
+	| IDENT ':=' expr															# VarAssignStmt
+	| expr '[' expr ']' ':=' expr												# SubAssignStmt
+	| expr '.' IDENT ':=' expr													# MemAssignStmt
+	| 'if' '(' expr ')' stmt ('else' stmt)?										# IfStmt
+	| 'while' beforeBranch '(' expr ')' stmt									# WhileStmt
+	| 'for' beforeBranch '(' (var (':=' expr)?)? ';' expr ';' expr? ')' stmt	# ForStmt
+	| 'break' ';'																# BreakStmt
+	| 'return' expr? ';'														# ReturnStmt
+	| annotationWithLabel ';'													# AssertStmt
+	| '{' stmt* '}'																# StmtBlock;
 
 /* about expression */
 expr:
 	IDENT												# IdentExpr
 	| constant											# ConstExpr
-	| IDENT '(' callInterior ')'						# CallExpr
+	| IDENT '(' (expr (',' expr)*)? ')'					# CallExpr
 	| '(' expr ')'										# ParExpr
 	| expr '[' expr ']'									# SubExpr
 	| 'new' type '[' expr ']'							# NewArrayExpr
@@ -76,14 +52,8 @@ expr:
 	| expr ('<->' | '->') expr							# ArrowExpr
 	| '|' expr '|'										# LengthExpr;
 
-// This rule is actually the same as the CallExpr alternative rule, it is separated as an
-// independent rule because ANTLR cannot handle mutually left-recursiveness.
-call: expr '(' callInterior ')';
-
-callInterior: | (expr ',')* expr;
-
 /* annotation */
-annotationWithLabel: '@' IDENT ':' expr | '@' expr;
+annotationWithLabel: '@' (IDENT ':')? expr;
 
 annotationPre: '@pre' expr;
 
@@ -104,21 +74,18 @@ beforeBranch:
 	| annotationWithLabel termination
 	| annotationWithLabel;
 
-termination: '#' '(' terminationArgs ')';
+termination: '#' '(' expr (',' expr)* ')';
 
-terminationArgs: expr | terminationArgs ',' expr;
+/* variable */
+var: type IDENT;
 
-/* about type */
+/* type */
 type: atomicType '[]'? | IDENT;
 
 atomicType: 'int' | 'float' | 'bool';
 
 /* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';
-
-var: type IDENT;
-
-varDecl: var ';';
 
 /* lexer */
 INT_CONSTANT: [0-9]+;

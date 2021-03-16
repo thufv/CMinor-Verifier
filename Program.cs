@@ -50,8 +50,8 @@ namespace piVC_thu
             piParser parser = new piParser(tokens);
             parser.BuildParseTree = true;
             IParseTree tree = parser.main();
-            Visitor visitor = new Visitor();
-            visitor.Visit(tree);
+            CFGGenerator generator = new CFGGenerator();
+            generator.Visit(tree);
             Console.WriteLine("Parsed. If something goes wrong, you'll see it.");
         }
     }
