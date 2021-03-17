@@ -54,24 +54,18 @@ namespace piVC_thu
 
     sealed class BoolType : AtomicType
     {
-        public bool annotated;
+        private static BoolType singleton = new BoolType();
 
-        private static BoolType nonAnnotatedSingleton = new BoolType();
-        private static BoolType annotatedSingleton = new BoolType(true);
+        private BoolType() { }
 
-        private BoolType(bool annotated = false)
+        public static BoolType Get()
         {
-            this.annotated = annotated;
-        }
-
-        public static BoolType Get(bool annotated = false)
-        {
-            return annotated ? annotatedSingleton : nonAnnotatedSingleton;
+            return singleton;
         }
 
         public override string ToString()
         {
-            return annotated ? "annotated-bool" : "bool";
+            return "bool";
         }
     }
 

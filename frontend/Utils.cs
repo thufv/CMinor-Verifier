@@ -45,10 +45,12 @@ namespace piVC_thu
             }
         }
 
-        Expression TypeConfirm(ParserRuleContext context, Expression expression, Type intendedType)
+        Expression TypeConfirm(ParserRuleContext context, Expression expression, Type intendedType, bool annotated = false)
         {
             if (expression.type != intendedType)
                 throw new ParsingException(context, $"the expected type of the expression is {intendedType.GetType().Name} while the actual type is {expression.GetType().Name}.");
+            if (!annotated && expression.annotated)
+                throw new ParsingException(context, "quantifiers are only allowed to be used in annotations.");
             return expression;
         }
 
@@ -59,6 +61,14 @@ namespace piVC_thu
                 if (symbolTable.ContainsKey(name))
                     return symbolTable[name];
             throw new ParsingException(context, $"cannot find local variable {name}.");
+        }
+        bool LocalVariableExists(string name)
+        {
+            // consider each symbol table reversely
+            foreach (var symbolTable in symbolTables)
+                if (symbolTable.ContainsKey(name))
+                    return true;
+            return false;
         }
     }
 }

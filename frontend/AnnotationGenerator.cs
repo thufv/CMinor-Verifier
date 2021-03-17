@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using System.Collections.Generic;
+
 using Antlr4.Runtime.Misc;
 
 namespace piVC_thu
@@ -14,20 +16,23 @@ namespace piVC_thu
             // If you don't believe that, let me ask, what symbol field should the identifier
             // of loop invariant fall in? What do we do if an annotation identifier
             // conflict with a local variable, function, predicate or class? It's too tedious!
-            return TypeConfirm(context, Visit(context.expr())!, BoolType.Get(annotated: true));
+            return TypeConfirm(context, Visit(context.expr())!, BoolType.Get(), true);
         }
 
         // The following methods are out of control of visitor pattern,
         // as we need a differnt return type...
-        List<Expression> CalcRankingFunction(piParser.TerminationContext context)
+        List<Expression> CalcRankingFunction([NotNull] piParser.TerminationContext context)
         {
             return new List<Expression>(context.expr().Select(exprContext => Visit(exprContext)!));
         }
 
-        PreconditionBlock CalcPreconditionBlock(piParser.AnnotationPreContext annotationPreContext, piParser.TerminationContext terminationContext)
+        PreconditionBlock CalcPreconditionBlock([NotNull] piParser.AnnotationPreContext annotationPreContext, piParser.TerminationContext terminationContext)
         {
             Expression condition = Visit(annotationPreContext.expr())!;
-            List<Expression> rankingFunction = CalcRankingFunction(terminationContext);
+            List<Expression> rankingFunction =
+                terminationContext != null ?
+                    CalcRankingFunction(terminationContext) :
+                    new List<Expression>();
             return new PreconditionBlock
             {
                 condition = condition,
@@ -35,10 +40,13 @@ namespace piVC_thu
             };
         }
 
-        LoopHeadBlock CalcLoopHeadBlock(piParser.AnnotationWithLabelContext invariantContext, piParser.TerminationContext terminationContext)
+        LoopHeadBlock CalcLoopHeadBlock([NotNull] piParser.AnnotationWithLabelContext invariantContext, piParser.TerminationContext terminationContext)
         {
             Expression invariant = Visit(invariantContext.expr())!;
-            List<Expression> rankingFunction = CalcRankingFunction(terminationContext);
+            List<Expression> rankingFunction =
+                terminationContext != null ?
+                    CalcRankingFunction(terminationContext) :
+                    new List<Expression>();
             return new LoopHeadBlock
             {
                 invariant = invariant,
@@ -46,20 +54,17 @@ namespace piVC_thu
             };
         }
 
-        PostconditionBlock CalcPostconditionBlock(piParser.AnnotationPostContext context)
+        PostconditionBlock CalcPostconditionBlock([NotNull] piParser.AnnotationPostContext context, LocalVariable? rv)
         {
-            if (currentFunction == null)
-                throw new ParsingException(context, "there's no current function. Probably a bug occurs.");
-
             // 这里我们开一个只有 rv 的假作用域
-            if (currentFunction.rv != null)
+            if (rv != null)
                 symbolTables.Push(new Dictionary<string, LocalVariable>() {
-                    { "rv", currentFunction.rv}
+                    { "rv", rv}
                 });
 
             Expression condition = Visit(context)!;
 
-            if (currentFunction.rv != null)
+            if (rv != null)
                 symbolTables.Pop();
 
             return new PostconditionBlock

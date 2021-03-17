@@ -5,8 +5,10 @@ namespace piVC_thu
     abstract class Expression
     {
         public VarType type = default!;
-        // "annotated" expression is the expression that contains a quantifier,
+        // "annotated" expression is the expression that contains quantifier,
+        // iff, implication or predicate,
         // which indicates that the expression must be regarded in annotation.
+        public bool annotated = false;
     }
 
     sealed class IdentifierExpression : Expression
@@ -60,7 +62,7 @@ namespace piVC_thu
 
     abstract class UnaryExpression : Expression
     {
-        public Expression expression;
+        public Expression expression = default!;
     }
 
     sealed class NotExpression : UnaryExpression
@@ -71,7 +73,7 @@ namespace piVC_thu
 
     abstract class BinaryExpression : Expression
     {
-        public Expression le, re;
+        public Expression le = default!, re = default!;
     }
 
     sealed class MultiExpression : BinaryExpression { }
@@ -116,5 +118,5 @@ namespace piVC_thu
 
     sealed class IffExpression : BinaryExpression { }
 
-    sealed class LengthExpression : Expression { }
+    sealed class LengthExpression : UnaryExpression { }
 }

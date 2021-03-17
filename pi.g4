@@ -45,7 +45,7 @@ expr:
 	| IDENT '(' (expr (',' expr)*)? ')'					# CallExpr
 	| '(' expr ')'										# ParExpr
 	| expr '[' expr ']'									# SubExpr
-	| 'new' type '[' expr ']'							# NewArrayExpr
+	| 'new' atomicType '[' expr ']'						# NewArrayExpr
 	| expr '.' IDENT									# MemExpr
 	| expr '{' expr '<-' expr '}'						# ArrUpdExpr
 	| ('!' | '-') expr									# UnaryExpr

@@ -38,6 +38,7 @@ namespace piVC_thu
         public FunType type = default!;
         public string name = default!;
         public Expression expression = default!;
+        public bool annotated = default!;
 
         // public CallExpression apply(List<Expression> arguments) { TODO }
     }

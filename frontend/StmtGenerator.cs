@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -331,7 +332,7 @@ namespace piVC_thu
             Debug.Assert(currentBasicBlock != null);
 
             // 尽管这里的类型应该是已经被 confirm 过一遍了，但多 confirm 一次是更加保险的选择
-            Expression annotation = TypeConfirm(context, Visit(context.annotationWithLabel())!, BoolType.Get(annotated: true));
+            Expression annotation = TypeConfirm(context, Visit(context.annotationWithLabel())!, BoolType.Get());
 
             currentBasicBlock.AddStatement(new AssertStatement
             {
@@ -426,8 +427,8 @@ namespace piVC_thu
 
         public string alphaRenamed(string name)
         {
-            numberOfName[name] = numberOfName.GetValueOrDefault<string, int>(name) + 1;
-            return name + "$" + numberOfName.GetValueOrDefault<string, int>(name);
+            numberOfVariable[name] = numberOfVariable.GetValueOrDefault<string, int>(name) + 1;
+            return name + "$" + numberOfVariable[name];
         }
     }
 }
