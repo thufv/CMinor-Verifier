@@ -21,7 +21,7 @@ namespace piVC_thu
     sealed class BasicBlock : Block
     {
         // statements 里有可能没有 Statement
-        public LinkedList<Statement> statements = new LinkedList<Statement>();
+        private LinkedList<Statement> statements = new LinkedList<Statement>();
 
         public void AddStatement(Statement statement)
         {
@@ -29,7 +29,7 @@ namespace piVC_thu
         }
     }
 
-    sealed class PostConditionBlock : Block
+    sealed class PostconditionBlock : Block
     {
         public Expression condition = default!;
     }
@@ -39,7 +39,7 @@ namespace piVC_thu
         public List<Expression> rankingFunction = new List<Expression>();
     }
 
-    sealed class PreConditionBlock : HeadBlock
+    sealed class PreconditionBlock : HeadBlock
     {
         public Expression condition = default!;
     }

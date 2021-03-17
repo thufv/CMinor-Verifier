@@ -17,13 +17,15 @@ namespace piVC_thu
         public FunType type = default!;
         public string name = default!;
 
-        public PreConditionBlock preConditionBlock = default!;
-        public PostConditionBlock postConditionBlock = default!;
+        public PreconditionBlock preconditionBlock = default!;
+        public PostconditionBlock postconditionBlock = default!;
 
         // All blocks, containing precondition block and postcondition block.
         // For minimization we don't need the following one,
         // this is only for convenience.
         public LinkedList<Block> blocks = new LinkedList<Block>();
+
+        public LocalVariable? rv;
 
         // public CallExpression apply(List<Expression> arguments) { TODO }
     }

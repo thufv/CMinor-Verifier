@@ -5,10 +5,13 @@ namespace piVC_thu
         // A globally unique integer
         // 主要是为了做谓词分析
         public int location;
-    }
+        static int currentLocation = 0;
 
-    // 这里我突然不知道该怎么处理了，因为 assign 也可以嵌套？
-    // assign 是不允许嵌套的，那为什么语法要写成这个德性呢……
+        public Statement()
+        {
+            location = ++currentLocation;
+        }
+    }
 
     abstract class AssignStatement : Statement
     {

@@ -1,25 +1,29 @@
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 
+using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
-
-// 需要做这么几件事：
-// 1. 名称解析
-// 2. 类型检查
+using Antlr4.Runtime.Tree;
 
 namespace piVC_thu
 {
+    // 整个 frontend 其实都是 CFGGenerator 这一个 class，
+    // 由于 class 里的实现代码太大，为了方便组织，利用 C# 的 partial class 我们将其划分成了几个文件。
+    //
+    // 我们的语言设计有一个绝妙的地方在于：它是没有 side effect 的。
+    // 这样的话，不少 C/C++ 里的 UB 在我们这里是不存在的，比如 `a[++i] = ++i;` 这种。
     partial class CFGGenerator : piBaseVisitor<Expression?>
     {
         // 最终计算出来的 IR 主体
         static public Main main = default!;
 
         // 当前正在计算的 function
-        Function? currentFuncion;
-        // 当前的 location
-        int currentLocation = 0;
+        Function? currentFunction;
         // block
         BasicBlock? currentBasicBlock = null;
+        // post block of loop (for break statement)
+        BasicBlock? postLoopBlock = null;
 
         // 符号表
         Dictionary<string, Function> functionTable = new Dictionary<string, Function>();
@@ -27,6 +31,7 @@ namespace piVC_thu
         Dictionary<string, Predicate> predicateTable = new Dictionary<string, Predicate>();
         Stack<Dictionary<string, LocalVariable>> symbolTables = new Stack<Dictionary<string, LocalVariable>>();
         // 这个是用来作 alpha renaming 的
+        // 每个 function/predicate 会清空一次
         Dictionary<string, int> numberOfName = new Dictionary<string, int>();
 
         public override Expression? VisitMain([NotNull] piParser.MainContext context)
@@ -50,7 +55,7 @@ namespace piVC_thu
             };
             foreach (Function function in functionTable.Values)
             {
-                considerHeadBlock(function.preConditionBlock);
+                considerHeadBlock(function.preconditionBlock);
                 foreach (Block block in function.blocks)
                     if (block is HeadBlock headBlock)
                         considerHeadBlock(headBlock);
@@ -65,12 +70,7 @@ namespace piVC_thu
 
             symbolTables.Push(new Dictionary<string, LocalVariable>());
 
-            PreConditionBlock preconditionBlock = CalcPreConditionBlock(context.beforeFunc().annotationPre(), context.beforeFunc().termination());
-            PostConditionBlock postconditionBlock = CalcPostConditionBlock(context.beforeFunc().annotationPost());
-
-            ReturnType returnType = context.type() != null ? CalcType(context.type()) : VoidType.Get();
-
-            // calculate parameters
+            // 把所有的参数加到符号表里
             VarType[] paraTypes = new VarType[context.var().Length];
             HashSet<string> paraNames = new HashSet<string>();
             for (int i = 0; i < context.var().Length; ++i)
@@ -78,42 +78,71 @@ namespace piVC_thu
                 var ctx = context.var()[i]!;
                 paraTypes[i] = CalcType(ctx.type());
                 string paraName = ctx.IDENT().GetText();
+                if (paraName == "rv")
+                    throw new ParsingException(ctx, "'rv' is not permitted as parameter name, as it's used to indicate the return value in postcondition.");
                 if (!paraNames.Contains(paraName))
                     paraNames.Add(paraName);
                 else
-                    throw new ParsingException(context, $"duplicate function parameter '{paraName}'");
+                    throw new ParsingException(ctx, $"duplicate function parameter '{paraName}'");
 
                 if (!numberOfName.ContainsKey(paraName))
                     numberOfName.Add(paraName, 0);
                 ParaVariable paraVariable = new ParaVariable
                 {
                     type = paraTypes[i],
-                    name = paraName + '$' + numberOfName[paraName] // alpha renaming
+                    name = alphaRenamed(paraName)
                 };
-                numberOfName[paraName] = numberOfName[paraName] + 1;
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
 
-            currentFuncion = new Function
+            // 算出 returnType，如果其不是 void，那么就搞出一个 rv 来
+            ReturnType returnType = context.type() != null ? CalcType(context.type()) : VoidType.Get();
+            LocalVariable? rv = null;
+            if (returnType is VarType)
+            {
+                rv = new LocalVariable
+                {
+                    type = (VarType)(returnType),
+                    name = alphaRenamed("rv")
+                };
+                Debug.Assert(name == "rv$1");
+            }
+
+            PreconditionBlock preconditionBlock = CalcPreconditionBlock(context.beforeFunc().annotationPre(), context.beforeFunc().termination());
+            PostconditionBlock postconditionBlock = CalcPostconditionBlock(context.beforeFunc().annotationPost());
+
+            currentFunction = new Function
             {
                 type = FunType.Get(returnType, paraTypes),
                 name = name,
-                preConditionBlock = preconditionBlock,
-                postConditionBlock = postconditionBlock
+                preconditionBlock = preconditionBlock,
+                postconditionBlock = postconditionBlock
             };
-            main.functions.AddLast(currentFuncion);
-            functionTable.Add(name, currentFuncion);
+            main.functions.AddLast(currentFunction);
+            functionTable.Add(name, currentFunction);
 
             // visit function body
             currentBasicBlock = new BasicBlock();
             foreach (var stmt in context.stmt())
                 Visit(stmt);
-            Block.AddEdge(currentBasicBlock, postconditionBlock);
+            
+            // 理想情况下，currentBasicBlock 应该是空，这表示所有的 path 都已经被 return 了
+            if (currentBasicBlock != null)
+            {
+                if (returnType is VoidType)
+                { // 如果函数的返回值类型是 void 的话，我们是允许隐式的 return 的
+                    Block.AddEdge(currentBasicBlock, postconditionBlock);
+                }
+                else
+                    throw new ParsingException(context, $"function {name} does not return in all paths.");
+            }
 
-            numberOfName.Clear();
+            // 搞定这个函数啦~
             symbolTables.Pop();
-            currentFuncion = null;
+            numberOfName.Clear();
+            currentFunction = null;
+
             return null;
         }
 
@@ -133,7 +162,7 @@ namespace piVC_thu
                 if (!members.ContainsKey(name))
                     members.Add(name, memberVariable);
                 else
-                    throw new ParsingException(member, $"duplicate member '{name}'");
+                    throw new ParsingException(member, $"duplicate struct member '{name}'");
             }
             Struct s = new Struct(name, members);
             structTable.Add(name, s);
@@ -157,20 +186,18 @@ namespace piVC_thu
                 if (!paraNames.Contains(paraName))
                     paraNames.Add(paraName);
                 else
-                    throw new ParsingException(context, $"duplicate function parameter '{paraName}'");
+                    throw new ParsingException(ctx, $"duplicate predicate parameter '{paraName}'");
 
                 if (!numberOfName.ContainsKey(paraName))
                     numberOfName.Add(paraName, 0);
                 ParaVariable paraVariable = new ParaVariable
                 {
                     type = paraTypes[i],
-                    name = paraName + '$' + numberOfName.GetValueOrDefault<string, int>(paraName) // alpha renaming
+                    name = alphaRenamed(paraName)
                 };
-                numberOfName[paraName] = numberOfName.GetValueOrDefault<string, int>(paraName) + 1;
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
-
             Expression expression = Visit(context.expr())!;
 
             Predicate predicate = new Predicate
@@ -182,7 +209,24 @@ namespace piVC_thu
             predicateTable.Add(name, predicate);
 
             symbolTables.Pop();
+            numberOfName.Clear();
+
             return null;
+        }
+
+        // ==== utils just for top level definitions ====
+
+        string CalcDefName(ParserRuleContext context, ITerminalNode node)
+        {
+            string name = node.GetText();
+            // check if the name is used by a previous function, struct or predicate
+            if (functionTable.ContainsKey(name))
+                throw new ParsingException(context, $"a function named '{name}' has already been defined");
+            if (structTable.ContainsKey(name))
+                throw new ParsingException(context, $"a struct named '{name}' has already been defined");
+            if (predicateTable.ContainsKey(name))
+                throw new ParsingException(context, $"a predicate named '{name}' has already been defined");
+            return name;
         }
     }
 }

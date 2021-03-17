@@ -1,26 +1,10 @@
-using System.Linq;
-using System.Collections.Generic;
-
 using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 
 namespace piVC_thu
 {
+    // 如果是专属于某一部分的 util method，就放到直接放到它的那个文件里吧QAQ
     partial class CFGGenerator : piBaseVisitor<Expression?>
     {
-        string CalcDefName(ParserRuleContext context, ITerminalNode node)
-        {
-            string name = node.GetText();
-            // check if the name is used by a previous function, struct or predicate
-            if (functionTable.ContainsKey(name))
-                throw new ParsingException(context, $"a function named '{name}' has already been defined");
-            if (structTable.ContainsKey(name))
-                throw new ParsingException(context, $"a struct named '{name}' has already been defined");
-            if (predicateTable.ContainsKey(name))
-                throw new ParsingException(context, $"a predicate named '{name}' has already been defined");
-            return name;
-        }
-
         // We don't override VisitType and VisitAtomicType,
         // as we directly use the following method CalcType.
         VarType CalcType(piParser.TypeContext context)
@@ -61,57 +45,10 @@ namespace piVC_thu
             }
         }
 
-        List<Expression> CalcRankingFunction(piParser.TerminationContext context)
-        {
-            return new List<Expression>(context.expr().Select(exprContext => Visit(exprContext)!));
-        }
-
-        PreConditionBlock CalcPreConditionBlock(piParser.AnnotationPreContext annotationPreContext, piParser.TerminationContext terminationContext)
-        {
-            Expression condition = Visit(annotationPreContext.expr())!;
-            List<Expression> rankingFunction = CalcRankingFunction(terminationContext);
-            return new PreConditionBlock
-            {
-                condition = condition,
-                rankingFunction = rankingFunction
-            };
-        }
-
-        LoopHeadBlock CalcLoopHeadBlock(piParser.AnnotationWithLabelContext invariantContext, piParser.TerminationContext terminationContext)
-        {
-            Expression invariant = Visit(invariantContext.expr())!;
-            List<Expression> rankingFunction = CalcRankingFunction(terminationContext);
-            return new LoopHeadBlock
-            {
-                invariant = invariant,
-                rankingFunction = rankingFunction
-            };
-        }
-
-        PostConditionBlock CalcPostConditionBlock(piParser.AnnotationPostContext context)
-        {
-            Expression condition = Visit(context)!;
-            return new PostConditionBlock
-            {
-                condition = condition
-            };
-        }
-
-        Expression TypeConfirm(ParserRuleContext context, Expression expression, System.Type intendedType, bool annotated = false)
-        {
-            if (expression.type.GetType() != intendedType)
-                throw new ParsingException(context, $"the expected type of the expression is {intendedType.Name} while the actual type is {expression.GetType().Name}.");
-            if (!annotated && expression.annotated)
-                throw new ParsingException(context, "quantifiers are only allowed to be used in annotations.");
-            return expression;
-        }
-
-        Expression TypeConfirm(ParserRuleContext context, Expression expression, Type intendedType, bool annotated = false)
+        Expression TypeConfirm(ParserRuleContext context, Expression expression, Type intendedType)
         {
             if (expression.type != intendedType)
                 throw new ParsingException(context, $"the expected type of the expression is {intendedType.GetType().Name} while the actual type is {expression.GetType().Name}.");
-            if (!annotated && expression.annotated)
-                throw new ParsingException(context, "quantifiers are only allowed to be used in annotations.");
             return expression;
         }
 

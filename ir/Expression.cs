@@ -7,7 +7,6 @@ namespace piVC_thu
         public VarType type = default!;
         // "annotated" expression is the expression that contains a quantifier,
         // which indicates that the expression must be regarded in annotation.
-        public bool annotated = false;
     }
 
     sealed class IdentifierExpression : Expression

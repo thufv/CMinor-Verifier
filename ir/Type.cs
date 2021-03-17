@@ -28,6 +28,11 @@ namespace piVC_thu
         {
             return singleton;
         }
+
+        public override string ToString()
+        {
+            return "int";
+        }
     }
 
     sealed class FloatType : AtomicType
@@ -39,6 +44,11 @@ namespace piVC_thu
         public static FloatType Get()
         {
             return singleton;
+        }
+
+        public override string ToString()
+        {
+            return "float";
         }
     }
 
@@ -57,6 +67,11 @@ namespace piVC_thu
         public static BoolType Get(bool annotated = false)
         {
             return annotated ? annotatedSingleton : nonAnnotatedSingleton;
+        }
+
+        public override string ToString()
+        {
+            return annotated ? "annotated-bool" : "bool";
         }
     }
 
@@ -89,6 +104,11 @@ namespace piVC_thu
                         paramName: nameof(atomicType));
             }
         }
+
+        public override string ToString()
+        {
+            return $"{atomicType}[]";
+        }
     }
 
     sealed class VoidType : ReturnType
@@ -100,6 +120,11 @@ namespace piVC_thu
         public static VoidType Get()
         {
             return singleton;
+        }
+
+        public override string ToString()
+        {
+            return "void";
         }
     }
 
@@ -121,6 +146,11 @@ namespace piVC_thu
                 singletons.Add(structDefinition, new StructType(structDefinition));
             }
             return singletons[structDefinition];
+        }
+
+        public override string ToString()
+        {
+            return $"struct {structDefinition.name}";
         }
     }
 
@@ -159,6 +189,19 @@ namespace piVC_thu
             FunType newFunType = new FunType(returnType, paraTypes);
             singletons.AddLast(newFunType);
             return newFunType;
+        }
+
+        public override string ToString()
+        {
+            string s = returnType.ToString()!;
+            s += "(";
+            for (int i = 0; i < paraTypes.Length; ++i)
+            {
+                if (i > 0) s += ",";
+                s += paraTypes[i].ToString();
+            }
+            s += ")";
+            return s;
         }
     }
 }

@@ -18,18 +18,25 @@ predDef:
 
 /* about statement */
 stmt:
-	var (':=' expr)? ';'														# VarDeclStmt
-	| expr ';'																	# ExprStmt
-	| IDENT ':=' expr															# VarAssignStmt
-	| expr '[' expr ']' ':=' expr												# SubAssignStmt
-	| expr '.' IDENT ':=' expr													# MemAssignStmt
-	| 'if' '(' expr ')' stmt ('else' stmt)?										# IfStmt
-	| 'while' beforeBranch '(' expr ')' stmt									# WhileStmt
-	| 'for' beforeBranch '(' (var (':=' expr)?)? ';' expr ';' expr? ')' stmt	# ForStmt
-	| 'break' ';'																# BreakStmt
-	| 'return' expr? ';'														# ReturnStmt
-	| annotationWithLabel ';'													# AssertStmt
-	| '{' stmt* '}'																# StmtBlock;
+	var (':=' expr)? ';'						# VarDeclStmt
+	| expr ';'									# ExprStmt
+	| assign ';'								# AssignStmt
+	| 'if' '(' expr ')' stmt ('else' stmt)?		# IfStmt
+	| 'while' beforeBranch '(' expr ')' stmt	# WhileStmt
+	| 'for' beforeBranch '(' (var (':=' expr)?)? ';' expr ';' (
+		assign
+		| expr
+	)? ')' stmt					# ForStmt
+	| 'break' ';'				# BreakStmt
+	| 'return' expr? ';'		# ReturnStmt
+	| annotationWithLabel ';'	# AssertStmt
+	| '{' stmt* '}'				# StmtBlock;
+
+assign:
+	IDENT ':=' expr					# VarAssign
+	| expr '[' expr ']' ':=' expr	# SubAssign
+	// 可以有结果为 struct 类型的表达式——事实上只能是函数的返回值， 但这种表达式不是左值，不能放到赋值符号的右边
+	| IDENT '.' IDENT ':=' expr # MemAssign;
 
 /* about expression */
 expr:
@@ -39,7 +46,7 @@ expr:
 	| '(' expr ')'										# ParExpr
 	| expr '[' expr ']'									# SubExpr
 	| 'new' type '[' expr ']'							# NewArrayExpr
-	| IDENT '.' IDENT									# MemExpr
+	| expr '.' IDENT									# MemExpr
 	| expr '{' expr '<-' expr '}'						# ArrUpdExpr
 	| ('!' | '-') expr									# UnaryExpr
 	| expr ('*' | '/' | 'div' | '%') expr				# MulExpr
