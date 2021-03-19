@@ -130,7 +130,7 @@ namespace piVC_thu
         {
             writer.Write($"(new {atomicType}[");
             length.Print(writer);
-            writer.Write("]");
+            writer.Write("])");
         }
     }
 

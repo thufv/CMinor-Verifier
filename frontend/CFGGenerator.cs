@@ -167,15 +167,16 @@ namespace piVC_thu
             Dictionary<string, MemberVariable> members = new Dictionary<string, MemberVariable>();
             foreach (var member in context.var())
             {
+                string memberName = member.IDENT().GetText();
                 MemberVariable memberVariable = new MemberVariable
                 {
                     type = CalcType(member.type()),
-                    name = member.IDENT().GetText()
+                    name = memberName
                 };
                 if (!members.ContainsKey(name))
-                    members.Add(name, memberVariable);
+                    members.Add(memberName, memberVariable);
                 else
-                    throw new ParsingException(member, $"duplicate struct member '{name}'");
+                    throw new ParsingException(member, $"duplicate struct member '{memberName}'");
             }
             Struct s = new Struct(name, members);
             structTable.Add(name, s);

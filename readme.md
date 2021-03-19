@@ -2,14 +2,6 @@ This is the THU version compiler of [piVC](https://cs.stanford.edu/people/jasona
 
 ## Usage
 
-So far we just use a stupid way to update generated parser, if you update the grammar file, you have to update generated parser source files manually.
-
-In `/parsing`, you need to run command like the following:
-
-```bash
-java -jar </path/to/antlr/jar> piVC.g4 -Dlanguage=CSharp
-```
-
 ## To-Do
 
 A lot of work needs to do, include the followings and something other.

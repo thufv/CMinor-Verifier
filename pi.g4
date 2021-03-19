@@ -11,7 +11,7 @@ decl: funcDef | structDef | predDef;
 funcDef:
 	beforeFunc (type | 'void') IDENT '(' (var (',' var)*)? ')' '{' stmt* '}';
 
-structDef: 'struct' IDENT '{' var* '}';
+structDef: 'struct' IDENT '{' (var ';')* '}';
 
 predDef:
 	'predicate' IDENT '(' (var (',' var)*)? ')' ':=' expr ';';

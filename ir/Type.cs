@@ -10,9 +10,7 @@ using System.Collections.Generic;
 namespace piVC_thu
 {
     // 这里我们尝试拿 singleton design pattern 来简化繁琐的比较
-    abstract class Type
-    {
-    }
+    abstract class Type { }
 
     abstract class VarType : Type, ReturnType { }
 

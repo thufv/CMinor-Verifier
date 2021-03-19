@@ -54,7 +54,7 @@ namespace piVC_thu
             if (expression == null)
                 throw new ParsingException(context, $"try to use a void expression.");
             if (expression.type != intendedType)
-                throw new ParsingException(context, $"the expected type of the expression is {intendedType.GetType().Name} while the actual type is {expression.GetType().Name}.");
+                throw new ParsingException(context, $"the expected type of the expression is '{intendedType}' while the actual type is '{expression.type}'.");
             return expression;
         }
 
@@ -93,8 +93,8 @@ namespace piVC_thu
             Dictionary<string, int> variableCounter = new Dictionary<string, int>();
             public string GetVariable(string variable)
             {
-                int number = variableCounter.GetValueOrDefault<string, int>(variable);
-                variableCounter.Add(variable, number + 1);
+                int number = variableCounter.GetValueOrDefault<string, int>(variable) + 1;
+                variableCounter[variable] = number;
                 return variable + "$" + number;
             }
 
@@ -103,8 +103,8 @@ namespace piVC_thu
             Dictionary<string, int> callCounter = new Dictionary<string, int>();
             public string GetCall(string variable)
             {
-                int number = callCounter.GetValueOrDefault<string, int>(variable);
-                variableCounter.Add(variable, number + 1);
+                int number = callCounter.GetValueOrDefault<string, int>(variable) + 1;
+                callCounter[variable] = number;
                 return variable + "$" + number;
             }
 

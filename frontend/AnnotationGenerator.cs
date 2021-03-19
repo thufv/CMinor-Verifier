@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Diagnostics;
 using System.Collections.Generic;
 
 using Antlr4.Runtime.Misc;
@@ -41,12 +42,15 @@ namespace piVC_thu
 
         LoopHeadBlock CalcLoopHeadBlock([NotNull] piParser.AnnotationWithLabelContext invariantContext, piParser.TerminationContext terminationContext)
         {
+            Debug.Assert(currentFunction != null);
+            Debug.Assert(currentBlock != null);
+
             Expression invariant = NotNullConfirm(invariantContext.expr());
             List<Expression> rankingFunction =
                 terminationContext != null
                     ? CalcRankingFunction(terminationContext)
                     : new List<Expression>();
-            return new LoopHeadBlock
+            return new LoopHeadBlock(currentFunction, currentBlock)
             {
                 invariant = invariant,
                 rankingFunction = rankingFunction

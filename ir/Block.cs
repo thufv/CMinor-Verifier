@@ -23,6 +23,14 @@ namespace piVC_thu
             statements.AddLast(statement);
         }
 
+        public Block() { }
+        public Block(Function currentFunction, Block? predecessor)
+        {
+            currentFunction.blocks.AddLast(this);
+            if (predecessor != null)
+                AddEdge(predecessor, this);
+        }
+
         public abstract void Print(TextWriter writer);
         protected void PrintPredecessors(TextWriter writer)
         {
@@ -67,12 +75,8 @@ namespace piVC_thu
             PrintStatements(writer);
         }
 
-        public BasicBlock(Function currentFunction, Block predecessor = null)
-        {
-            currentFunction.blocks.AddLast(this);
-            if (predecessor != null)
-                AddEdge(predecessor, this);
-        }
+        public BasicBlock(Function currentFunction, Block? predecessor = null)
+            : base(currentFunction, predecessor) { }
 
         public override string ToString() => $"_BASIC#{number}";
     }
@@ -107,9 +111,13 @@ namespace piVC_thu
     {
         public List<Expression> rankingFunction = default!;
 
+        public HeadBlock() { }
+        public HeadBlock(Function currentFunction, Block? predecessor)
+            : base(currentFunction, predecessor) { }
+
         protected void PrintRankingFunction(TextWriter writer)
         {
-            writer.Write("\t# (\n");
+            writer.WriteLine("\t#rankingfunction\n\t(");
             for (int i = 0; i < rankingFunction.Count; ++i)
             {
                 writer.Write("\t\t");
@@ -154,6 +162,9 @@ namespace piVC_thu
 
         static int numberCounter = 0;
         public int number { get; } = ++numberCounter;
+
+        public LoopHeadBlock(Function currentFunction, Block? predecessor = null)
+            : base(currentFunction, predecessor) { }
 
         public override void Print(TextWriter writer)
         {

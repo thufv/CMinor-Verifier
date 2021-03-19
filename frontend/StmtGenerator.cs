@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -25,13 +24,20 @@ namespace piVC_thu
             annotated = null;
 
             // 用上面算出来的类型、变量名和初始化表达式构成一个变量整体
-            // 这里注意要做 alpha-renaming
-            LocalVariable localVariable = new LocalVariable
-            {
-                type = type,
-                name = counter.GetVariable(name),
-            };
+            LocalVariable localVariable = type is StructType
+                ? new StructVariable
+                {
+                    type = type,
+                    name = counter.GetVariable(name)
+                }
+                : new LocalVariable
+                {
+                    type = type,
+                    name = counter.GetVariable(name)
+                };
             symbolTables.Peek().Add(name, localVariable);
+
+
 
             // 如果说有初始化表达式存在，那么其实就相当于一个赋值语句，所以也需要放到现在的 block 里
             if (context.expr() != null)
@@ -82,12 +88,13 @@ namespace piVC_thu
             {
                 condition = conditionExpression
             });
+            symbolTables.Push(new Dictionary<string, LocalVariable>());
             Visit(context.stmt()[0]);
+            symbolTables.Pop();
             Block? visitedThenBlock = currentBlock;
 
             // else-block
             BasicBlock elseBlock = new BasicBlock(currentFunction, prevBlock);
-            Block.AddEdge(prevBlock, elseBlock);
             currentBlock = elseBlock;
             Expression notCondition = new NotExpression
             {
@@ -99,7 +106,11 @@ namespace piVC_thu
                 condition = notCondition
             });
             if (context.stmt().Length == 2)
+            {
+                symbolTables.Push(new Dictionary<string, LocalVariable>());
                 Visit(context.stmt()[1]);
+                symbolTables.Pop();
+            }
             Block? visitedElseBlock = currentBlock;
 
             // 在访问过之后，相应的 block 可能为空
@@ -124,7 +135,6 @@ namespace piVC_thu
             annotated = true;
             LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
             annotated = null;
-            Block.AddEdge(currentBlock, loopheadBlock);
 
             annotated = false;
             Expression condition = CompressedCondition(context.expr());
@@ -151,11 +161,9 @@ namespace piVC_thu
             {
                 condition = notCondition
             });
-            Block.AddEdge(loopheadBlock, exitBlock);
 
             // 开一个 post loop block，接在 exit loop block 后面
             postLoopBlock = new BasicBlock(currentFunction, exitBlock);
-            Block.AddEdge(exitBlock, postLoopBlock);
 
             // 访问 body
             currentBlock = bodyBlock;
@@ -214,11 +222,17 @@ namespace piVC_thu
                 Expression? initExpr = initExprContext != null ? TypeConfirm(initExprContext, type) : null;
                 annotated = null;
 
-                LocalVariable localVariable = new LocalVariable
-                {
-                    type = type,
-                    name = counter.GetVariable(name)
-                };
+                LocalVariable localVariable = type is StructType
+                    ? new StructVariable
+                    {
+                        type = type,
+                        name = counter.GetVariable(name)
+                    }
+                    : new LocalVariable
+                    {
+                        type = type,
+                        name = counter.GetVariable(name)
+                    };
                 symbolTables.Peek().Add(name, localVariable);
 
                 if (initExpr != null)
@@ -236,7 +250,6 @@ namespace piVC_thu
             annotated = true;
             LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
             annotated = null;
-            Block.AddEdge(currentBlock, loopheadBlock);
             currentBlock = loopheadBlock;
 
             // condition
@@ -246,7 +259,6 @@ namespace piVC_thu
 
             // 开一个 body block
             BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Block.AddEdge(loopheadBlock, bodyBlock);
 
             // 将 condition 作为 assume 放到 body block 的首端
             bodyBlock.AddStatement(new AssumeStatement
@@ -265,11 +277,9 @@ namespace piVC_thu
             {
                 condition = notCondition
             });
-            Block.AddEdge(loopheadBlock, exitBlock);
 
             // 开一个 post loop block，接在 exit loop block 后面
             postLoopBlock = new BasicBlock(currentFunction, exitBlock);
-            Block.AddEdge(exitBlock, postLoopBlock);
 
             // 访问 body
             currentBlock = bodyBlock;
@@ -293,6 +303,7 @@ namespace piVC_thu
 
             // 结束循环
             symbolTables.Pop();
+            currentBlock = postLoopBlock;
 
             return null;
         }
@@ -420,12 +431,12 @@ namespace piVC_thu
             string memberName = context.IDENT()[1].GetText();
             Variable structVariable = FindVariable(context, structName);
             if (structVariable is not StructVariable)
-                throw new ParsingException(context, $"request for member '{memberName}' in '{structName}', which is of non-struct type '{nameof(structVariable.type)}'.");
+                throw new ParsingException(context, $"request for member '{memberName}' in '{structName}', which is of non-struct type '{structVariable.type}'.");
             Struct s = ((StructType)(structVariable.type)).structDefinition;
 
             // 先根据名字算出来是哪个 member
             if (!s.members.ContainsKey(memberName))
-                throw new ParsingException(context, $"'struct {s.name}' has no member named {memberName}");
+                throw new ParsingException(context, $"'struct {s.name}' has no member named '{memberName}'.");
             MemberVariable memberVariable = s.members[memberName];
 
             // 将 MemberVariable 转成 LocalVariable 统一处理

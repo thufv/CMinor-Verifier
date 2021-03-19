@@ -58,11 +58,14 @@ namespace piVC_thu
             AntlrInputStream stream = new AntlrInputStream(reader);
             ITokenSource lexer = new piLexer(stream);
             ITokenStream tokens = new CommonTokenStream(lexer);
-            piParser parser = new piParser(tokens);
-            parser.BuildParseTree = true;
+            piParser parser = new piParser(tokens)
+            {
+                BuildParseTree = true,
+                ErrorHandler = new BailErrorStrategy()
+            };
             piParser.MainContext tree = parser.main();
             CFGGenerator generator = new CFGGenerator();
-            Main cfg = generator.apply(tree);
+            Main? cfg = generator.apply(tree);
 
             // 输出 cfg
             if (opts.CFGFile != null)
