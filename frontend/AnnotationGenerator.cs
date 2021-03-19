@@ -23,12 +23,12 @@ namespace piVC_thu
         // as we need a differnt return type...
         List<Expression> CalcRankingFunction([NotNull] piParser.TerminationContext context)
         {
-            return new List<Expression>(context.expr().Select(exprContext => Visit(exprContext)!));
+            return new List<Expression>(context.expr().Select(exprContext => NotNullConfirm(exprContext)));
         }
 
         PreconditionBlock CalcPreconditionBlock([NotNull] piParser.AnnotationPreContext annotationPreContext, piParser.TerminationContext terminationContext)
         {
-            Expression condition = Visit(annotationPreContext.expr())!;
+            Expression condition = NotNullConfirm(annotationPreContext.expr());
             List<Expression> rankingFunction =
                 terminationContext != null ?
                     CalcRankingFunction(terminationContext) :
@@ -42,7 +42,7 @@ namespace piVC_thu
 
         LoopHeadBlock CalcLoopHeadBlock([NotNull] piParser.AnnotationWithLabelContext invariantContext, piParser.TerminationContext terminationContext)
         {
-            Expression invariant = Visit(invariantContext.expr())!;
+            Expression invariant = NotNullConfirm(invariantContext.expr());
             List<Expression> rankingFunction =
                 terminationContext != null ?
                     CalcRankingFunction(terminationContext) :
@@ -62,7 +62,7 @@ namespace piVC_thu
                     { "rv", rv}
                 });
 
-            Expression condition = Visit(context)!;
+            Expression condition = NotNullConfirm(context);
 
             if (rv != null)
                 symbolTables.Pop();

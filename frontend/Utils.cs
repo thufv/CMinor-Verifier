@@ -52,7 +52,7 @@ namespace piVC_thu
         {
             Expression? expression = Visit(context);
             if (expression == null)
-                throw new ParsingException(context, $"calculate a void expression.");
+                throw new ParsingException(context, $"try to use a void expression.");
             if (expression.type != intendedType)
                 throw new ParsingException(context, $"the expected type of the expression is {intendedType.GetType().Name} while the actual type is {expression.GetType().Name}.");
             return expression;
@@ -73,6 +73,15 @@ namespace piVC_thu
                 if (symbolTable.ContainsKey(name))
                     return true;
             return false;
+        }
+
+        Expression NotNullConfirm([NotNull] ParserRuleContext context)
+        {
+            Expression? expression = Visit(context);
+            if (expression != null)
+                return expression;
+            else
+                throw new ParsingException(context, $"try to use a void expression.");
         }
 
         // 从 Counter 里得到的所有数字都是全局唯一的

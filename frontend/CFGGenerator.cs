@@ -78,7 +78,7 @@ namespace piVC_thu
             HashSet<string> paraNames = new HashSet<string>();
             for (int i = 0; i < context.var().Length; ++i)
             {
-                var ctx = context.var()[i]!;
+                var ctx = context.var()[i];
                 paraTypes[i] = CalcType(ctx.type());
                 string paraName = ctx.IDENT().GetText();
                 if (paraName == "rv")
@@ -107,7 +107,6 @@ namespace piVC_thu
                     type = (VarType)(returnType),
                     name = counter.GetVariable("rv")
                 };
-                Debug.Assert(rv.name == "rv$1");
             }
 
             annotated = true;
@@ -185,7 +184,7 @@ namespace piVC_thu
             HashSet<string> paraNames = new HashSet<string>();
             for (int i = 0; i < context.var().Length; ++i)
             {
-                var ctx = context.var()[i]!;
+                var ctx = context.var()[i];
                 paraTypes[i] = CalcType(ctx.type());
                 string paraName = ctx.IDENT().GetText();
                 if (!paraNames.Contains(paraName))
@@ -203,7 +202,7 @@ namespace piVC_thu
             }
 
             annotated = true;
-            Expression expression = Visit(context.expr())!;
+            Expression expression = NotNullConfirm(context.expr());
             annotated = null;
 
             Predicate predicate = new Predicate

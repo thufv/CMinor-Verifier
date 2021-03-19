@@ -54,7 +54,9 @@ namespace piVC_thu
             Debug.Assert(currentBlock != null);
 
             annotated = false;
-            Expression expression = Visit(context.expr())!;
+            // 这里的表达式的返回值在对象语言中是可以为 void 的，
+            // 也就是在元语言中可以为 null。
+            Visit(context.expr());
             annotated = null;
 
             return null;
@@ -377,7 +379,7 @@ namespace piVC_thu
             Variable variable = FindVariable(context, name);
 
             annotated = false;
-            Expression rhs = Visit(context.expr())!;
+            Expression rhs = NotNullConfirm(context.expr());
             annotated = null;
 
             currentBlock.AddStatement(new VariableAssignStatement
@@ -393,10 +395,10 @@ namespace piVC_thu
             Debug.Assert(currentBlock != null);
 
             annotated = false;
-            Expression array = Visit(context.expr()[0])!;
+            Expression array = NotNullConfirm(context.expr()[0]);
             if (array.type is not ArrayType)
                 throw new ParsingException(context, "the expression just before the subscription is not an array.");
-            Expression index = TypeConfirm(context.expr()[1], IntType.Get())!;
+            Expression index = TypeConfirm(context.expr()[1], IntType.Get());
             Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(array.type)).atomicType);
             annotated = null;
 
