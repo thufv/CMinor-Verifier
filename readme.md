@@ -21,16 +21,18 @@ A lot of work needs to do, include the followings and something other.
 - [ ] The framework of verification algorithm and a baseline implementation.
   - [ ] SMT solver abstraction
   - [ ] substitution
-- [ ] logger/writer
-  - [ ] CFG
-  - [ ] basic paths
-  - [ ] VCs
+- [ ] printer
+  - [ ] control flow graph
+    - [ ] more beautiful printer to avoid too long line
+  - [ ] basic path
+  - [ ] verification condition
   - [ ] counter model
 - [ ] The documentation for code, task and environments.
 - [ ] The testcases and judging system.
 
 ### Level II: Make things better
 
+- [ ] label of annotation: now I just omit it for simplicity
 - [ ] Target code (assembly) generator
 - [ ] Find a student to test
 

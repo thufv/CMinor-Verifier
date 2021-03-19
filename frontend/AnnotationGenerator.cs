@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -30,9 +29,9 @@ namespace piVC_thu
         {
             Expression condition = NotNullConfirm(annotationPreContext.expr());
             List<Expression> rankingFunction =
-                terminationContext != null ?
-                    CalcRankingFunction(terminationContext) :
-                    new List<Expression>();
+                terminationContext != null
+                    ? CalcRankingFunction(terminationContext)
+                    : new List<Expression>();
             return new PreconditionBlock
             {
                 condition = condition,
@@ -44,9 +43,9 @@ namespace piVC_thu
         {
             Expression invariant = NotNullConfirm(invariantContext.expr());
             List<Expression> rankingFunction =
-                terminationContext != null ?
-                    CalcRankingFunction(terminationContext) :
-                    new List<Expression>();
+                terminationContext != null
+                    ? CalcRankingFunction(terminationContext)
+                    : new List<Expression>();
             return new LoopHeadBlock
             {
                 invariant = invariant,

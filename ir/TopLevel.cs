@@ -1,3 +1,4 @@
+using System.IO;
 using System.Collections.Generic;
 
 namespace piVC_thu
@@ -7,6 +8,32 @@ namespace piVC_thu
         public LinkedList<Function> functions = new LinkedList<Function>();
         public LinkedList<Predicate> predicates = new LinkedList<Predicate>();
         public LinkedList<Struct> structs = new LinkedList<Struct>();
+
+        public void Print(TextWriter writer)
+        {
+            writer.WriteLine("// structs");
+            foreach (Struct s in structs)
+            {
+                s.Print(writer);
+                writer.WriteLine("");
+            }
+            writer.WriteLine("");
+
+            writer.WriteLine("// predicates");
+            foreach (Predicate p in predicates)
+            {
+                p.Print(writer);
+                writer.WriteLine("");
+            }
+            writer.WriteLine("");
+
+            writer.WriteLine("// functions");
+            foreach (Function f in functions)
+            {
+                f.Print(writer);
+                writer.WriteLine("");
+            }
+        }
     }
 
 
@@ -14,6 +41,7 @@ namespace piVC_thu
     {
         public FunType type = default!;
         public string name = default!;
+        public LocalVariable[] parameters = default!;
 
         public PreconditionBlock preconditionBlock = default!;
         public PostconditionBlock postconditionBlock = default!;
@@ -24,6 +52,23 @@ namespace piVC_thu
         public LinkedList<Block> blocks = new LinkedList<Block>();
 
         public LocalVariable? rv;
+
+        public void Print(TextWriter writer)
+        {
+            writer.WriteLine($"[function] {type.returnType} {name} \n(");
+            for (int i = 0; i < parameters.Length; ++i)
+                writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
+            writer.WriteLine(")");
+
+            preconditionBlock.Print(writer);
+            writer.WriteLine("");
+            foreach (Block block in blocks)
+            {
+                block.Print(writer);
+                writer.WriteLine("");
+            }
+            postconditionBlock.Print(writer);
+        }
     }
 
     class Predicate
@@ -33,7 +78,18 @@ namespace piVC_thu
         // is just one return statement.
         public FunType type = default!;
         public string name = default!;
+        public LocalVariable[] parameters = default!;
         public Expression expression = default!;
+
+        public void Print(TextWriter writer)
+        {
+            writer.Write($"[predicate] {name} (");
+            for (int i = 0; i < parameters.Length; ++i)
+                writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
+            writer.WriteLine(")");
+            writer.Write(":=");
+            expression.Print(writer);
+        }
     }
 
     class Struct
@@ -48,6 +104,14 @@ namespace piVC_thu
             this.name = name;
             this.members = members;
             this.type = StructType.Get(this);
+        }
+
+        public void Print(TextWriter writer)
+        {
+            writer.WriteLine($"[struct] {name}\n{{");
+            foreach (MemberVariable member in members.Values)
+                writer.WriteLine($"\t{member.name}: {member.type};");
+            writer.WriteLine("}}");
         }
     }
 }

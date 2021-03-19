@@ -65,6 +65,7 @@ namespace piVC_thu
         public override Expression? VisitIfStmt([NotNull] piParser.IfStmtContext context)
         {
             Debug.Assert(currentBlock != null);
+            Debug.Assert(currentFunction != null);
 
             // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量
             // 作为 variable
@@ -75,8 +76,7 @@ namespace piVC_thu
             Block prevBlock = currentBlock;
 
             // then-block
-            BasicBlock thenBlock = new BasicBlock();
-            Block.AddEdge(prevBlock, thenBlock);
+            BasicBlock thenBlock = new BasicBlock(currentFunction, prevBlock);
             currentBlock = thenBlock;
             thenBlock.AddStatement(new AssumeStatement
             {
@@ -86,7 +86,7 @@ namespace piVC_thu
             Block? visitedThenBlock = currentBlock;
 
             // else-block
-            BasicBlock elseBlock = new BasicBlock();
+            BasicBlock elseBlock = new BasicBlock(currentFunction, prevBlock);
             Block.AddEdge(prevBlock, elseBlock);
             currentBlock = elseBlock;
             Expression notCondition = new NotExpression
@@ -106,7 +106,7 @@ namespace piVC_thu
             // 因为被 break 或者 return 了
             if (visitedThenBlock != null || visitedElseBlock != null)
             {
-                currentBlock = new BasicBlock();
+                currentBlock = new BasicBlock(currentFunction);
                 if (thenBlock != null)
                     Block.AddEdge(thenBlock, currentBlock);
                 if (elseBlock != null)
@@ -119,6 +119,7 @@ namespace piVC_thu
         public override Expression? VisitWhileStmt([NotNull] piParser.WhileStmtContext context)
         {
             Debug.Assert(currentBlock != null);
+            Debug.Assert(currentFunction != null);
 
             annotated = true;
             LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
@@ -133,15 +134,14 @@ namespace piVC_thu
             symbolTables.Push(new Dictionary<string, LocalVariable>());
 
             // 开一个 body block
-            BasicBlock bodyBlock = new BasicBlock();
+            BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);
             bodyBlock.AddStatement(new AssumeStatement
             {
                 condition = condition
             });
-            Block.AddEdge(loopheadBlock, bodyBlock);
 
             // 开一个 exit loop block，里面其实只有一条语句，就是 assume notCondition
-            BasicBlock exitBlock = new BasicBlock();
+            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
             Expression notCondition = new NotExpression
             {
                 type = BoolType.Get(),
@@ -154,7 +154,7 @@ namespace piVC_thu
             Block.AddEdge(loopheadBlock, exitBlock);
 
             // 开一个 post loop block，接在 exit loop block 后面
-            postLoopBlock = new BasicBlock();
+            postLoopBlock = new BasicBlock(currentFunction, exitBlock);
             Block.AddEdge(exitBlock, postLoopBlock);
 
             // 访问 body
@@ -183,6 +183,7 @@ namespace piVC_thu
         public override Expression? VisitForStmt([NotNull] piParser.ForStmtContext context)
         {
             Debug.Assert(currentBlock != null);
+            Debug.Assert(currentFunction != null);
 
             // find three expressions in the for-statement
             piParser.ExprContext? initExprContext = null, condExprContext = null, iterExprContext = null;
@@ -244,7 +245,7 @@ namespace piVC_thu
             annotated = null;
 
             // 开一个 body block
-            BasicBlock bodyBlock = new BasicBlock();
+            BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);
             Block.AddEdge(loopheadBlock, bodyBlock);
 
             // 将 condition 作为 assume 放到 body block 的首端
@@ -254,7 +255,7 @@ namespace piVC_thu
             });
 
             // 开一个 exit loop block，其中其实只有一条 assume 语句
-            BasicBlock exitBlock = new BasicBlock();
+            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
             Expression notCondition = new NotExpression
             {
                 type = BoolType.Get(),
@@ -267,7 +268,7 @@ namespace piVC_thu
             Block.AddEdge(loopheadBlock, exitBlock);
 
             // 开一个 post loop block，接在 exit loop block 后面
-            postLoopBlock = new BasicBlock();
+            postLoopBlock = new BasicBlock(currentFunction, exitBlock);
             Block.AddEdge(exitBlock, postLoopBlock);
 
             // 访问 body

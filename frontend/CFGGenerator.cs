@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
 
 using Antlr4.Runtime;
@@ -16,7 +15,7 @@ namespace piVC_thu
     partial class CFGGenerator : piBaseVisitor<Expression?>
     {
         // 最终计算出来的 IR 主体
-        static public Main main = default!;
+        Main main = default!;
 
         // 当前正在计算的 function
         Function? currentFunction;
@@ -37,10 +36,16 @@ namespace piVC_thu
         // 主要是用来帮助表达式知道自己现在是否在一个 annotation 里
         bool? annotated = null;
 
-        public override Expression? VisitMain([NotNull] piParser.MainContext context)
+        // 真正的主函数
+        public Main apply([NotNull] piParser.MainContext context)
         {
             main = new Main();
+            Visit(context);
+            return main;
+        }
 
+        public override Expression? VisitMain([NotNull] piParser.MainContext context)
+        {
             foreach (var decl in context.decl())
                 Visit(decl);
 
@@ -52,9 +57,9 @@ namespace piVC_thu
                     rankingFunctionSize = headBlock.rankingFunction.Count;
                 if (headBlock.rankingFunction.Count != rankingFunctionSize)
                     throw new ParsingException(context,
-                        rankingFunctionSize == 0 || headBlock.rankingFunction.Count == 0 ?
-                            "some ranking functions are annotated while the others not" :
-                            "the sizes of the tuple of ranking functions are different");
+                        rankingFunctionSize == 0 || headBlock.rankingFunction.Count == 0
+                            ? "some ranking functions are annotated while the others not"
+                            : "the sizes of the tuple of ranking functions are different");
             };
             foreach (Function function in functionTable.Values)
             {
@@ -74,9 +79,11 @@ namespace piVC_thu
             symbolTables.Push(new Dictionary<string, LocalVariable>());
 
             // 把所有的参数加到符号表里
-            VarType[] paraTypes = new VarType[context.var().Length];
+            int paraNum = context.var().Length;
+            VarType[] paraTypes = new VarType[paraNum];
+            LocalVariable[] parameters = new LocalVariable[paraNum];
             HashSet<string> paraNames = new HashSet<string>();
-            for (int i = 0; i < context.var().Length; ++i)
+            for (int i = 0; i < paraNum; ++i)
             {
                 var ctx = context.var()[i];
                 paraTypes[i] = CalcType(ctx.type());
@@ -93,6 +100,7 @@ namespace piVC_thu
                     type = paraTypes[i],
                     name = counter.GetVariable(paraName)
                 };
+                parameters[i] = paraVariable;
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
@@ -118,6 +126,7 @@ namespace piVC_thu
             {
                 type = FunType.Get(returnType, paraTypes),
                 name = name,
+                parameters = parameters,
                 preconditionBlock = preconditionBlock,
                 postconditionBlock = postconditionBlock,
                 rv = rv
@@ -126,7 +135,7 @@ namespace piVC_thu
             functionTable.Add(name, currentFunction);
 
             // visit function body
-            currentBlock = new BasicBlock();
+            currentBlock = new BasicBlock(currentFunction, preconditionBlock);
             annotated = false;
             foreach (var stmt in context.stmt())
                 Visit(stmt);
@@ -180,9 +189,11 @@ namespace piVC_thu
             symbolTables.Push(new Dictionary<string, LocalVariable>());
 
             // calculate parameters
-            VarType[] paraTypes = new VarType[context.var().Length];
+            int paraNum = context.var().Length;
+            LocalVariable[] parameters = new LocalVariable[paraNum];
+            VarType[] paraTypes = new VarType[paraNum];
             HashSet<string> paraNames = new HashSet<string>();
-            for (int i = 0; i < context.var().Length; ++i)
+            for (int i = 0; i < paraNum; ++i)
             {
                 var ctx = context.var()[i];
                 paraTypes[i] = CalcType(ctx.type());
@@ -197,6 +208,7 @@ namespace piVC_thu
                     type = paraTypes[i],
                     name = counter.GetVariable(paraName)
                 };
+                parameters[i] = paraVariable;
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
@@ -209,6 +221,7 @@ namespace piVC_thu
             {
                 type = FunType.Get(BoolType.Get(), paraTypes),
                 name = name,
+                parameters = parameters,
                 expression = expression
             };
             // 这里我们需要在表达式算完之后再将谓词名放到表里，
