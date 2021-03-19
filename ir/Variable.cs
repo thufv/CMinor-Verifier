@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+
 namespace piVC_thu
 {
     abstract class Variable
@@ -6,22 +9,31 @@ namespace piVC_thu
         public string name = default!;
     }
 
-    class LocalVariable : Variable
+    // 包括局部变量，函数参数，辅助变量
+    // 额外的，成员变量也会被转成 LocalVariable 来处理
+    class LocalVariable : Variable { }
+
+    class StructVariable : LocalVariable
     {
-        public Expression? initializer = null;
-    }
+        public Dictionary<string, LocalVariable> members = new Dictionary<string, LocalVariable>();
 
-    sealed class ParaVariable : LocalVariable { }
-
-    sealed class MemberVariable : Variable { }
-
-    sealed class QuantifiedVariable : Variable
-    {
-        // 这里搞了一个 constructor，其实仅仅是因为 quantified variable 的类型必须为 int
-        public QuantifiedVariable(string name)
+        [ContractInvariantMethod]
+        void ObjectInvariant()
         {
-            this.type = IntType.Get();
-            this.name = name;
+            Contract.Invariant(this.type is StructType);
         }
     }
+
+    sealed class QuantifiedVariable : LocalVariable
+    {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(this.type is IntType);
+        }
+    }
+
+    // MemberVariable 和其他的不太一样，它是放在结构体的定义里的，
+    // 并不会实际出现在表达式里。
+    sealed class MemberVariable : Variable { }
 }

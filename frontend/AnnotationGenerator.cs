@@ -16,7 +16,7 @@ namespace piVC_thu
             // If you don't believe that, let me ask, what symbol field should the identifier
             // of loop invariant fall in? What do we do if an annotation identifier
             // conflict with a local variable, function, predicate or class? It's too tedious!
-            return TypeConfirm(context, Visit(context.expr())!, BoolType.Get(), true);
+            return TypeConfirm(context.expr(), BoolType.Get());
         }
 
         // The following methods are out of control of visitor pattern,

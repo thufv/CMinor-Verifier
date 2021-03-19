@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+
 using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 
 namespace piVC_thu
 {
@@ -7,7 +10,7 @@ namespace piVC_thu
     {
         // We don't override VisitType and VisitAtomicType,
         // as we directly use the following method CalcType.
-        VarType CalcType(piParser.TypeContext context)
+        VarType CalcType([NotNull] piParser.TypeContext context)
         {
             if (context.IDENT() != null)
             { // struct type
@@ -45,16 +48,17 @@ namespace piVC_thu
             }
         }
 
-        Expression TypeConfirm(ParserRuleContext context, Expression expression, Type intendedType, bool annotated = false)
+        Expression TypeConfirm([NotNull] ParserRuleContext context, Type intendedType)
         {
+            Expression? expression = Visit(context);
+            if (expression == null)
+                throw new ParsingException(context, $"calculate a void expression.");
             if (expression.type != intendedType)
                 throw new ParsingException(context, $"the expected type of the expression is {intendedType.GetType().Name} while the actual type is {expression.GetType().Name}.");
-            if (!annotated && expression.annotated)
-                throw new ParsingException(context, "quantifiers are only allowed to be used in annotations.");
             return expression;
         }
 
-        LocalVariable FindLocalVariable(ParserRuleContext context, string name)
+        Variable FindVariable([NotNull] ParserRuleContext context, string name)
         {
             // consider each symbol table reversely
             foreach (var symbolTable in symbolTables)
@@ -69,6 +73,54 @@ namespace piVC_thu
                 if (symbolTable.ContainsKey(name))
                     return true;
             return false;
+        }
+
+        // 从 Counter 里得到的所有数字都是全局唯一的
+        class Counter
+        {
+            // 这个是用来作 alpha renaming 的，每个 function 会清空一次
+            // 局部变量作 alpha-renaming 会变成：{name}${number}
+            // 成员变量作 alpha-renaming 会变成：{structName}${number}${memberName}
+            Dictionary<string, int> variableCounter = new Dictionary<string, int>();
+            public string GetVariable(string variable)
+            {
+                int number = variableCounter.GetValueOrDefault<string, int>(variable);
+                variableCounter.Add(variable, number + 1);
+                return variable + "$" + number;
+            }
+
+            // 我们需要为每一个函数调用搞一个临时变量
+            // 这个临时变量的名字是：{name}#{number}
+            Dictionary<string, int> callCounter = new Dictionary<string, int>();
+            public string GetCall(string variable)
+            {
+                int number = callCounter.GetValueOrDefault<string, int>(variable);
+                variableCounter.Add(variable, number + 1);
+                return variable + "$" + number;
+            }
+
+            // 如果一个 condition 不是只有一个变量组成的，
+            // 那么我们需要为这个 condition 搞一个临时变量
+            // 这个临时变量的名字是：_condition#{number}
+            int conditionCounter = 0;
+            public string GetCondition()
+            {
+                return "_condition" + "$" + ++conditionCounter;
+            }
+
+            // 我们也需要为每一个新数组搞一个临时变量：_array#{number}
+            int newArrayCounter = 0;
+            public string GetArray()
+            {
+                return "_array" + "$" + ++newArrayCounter;
+            }
+
+            // 我们其实也需要为每一个参数搞一个临时变量：_arg#{number}
+            int newArgNumber = 0;
+            public string GetArg()
+            {
+                return "_arg" + "$" + ++newArgNumber;
+            }
         }
     }
 }

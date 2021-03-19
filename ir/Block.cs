@@ -1,9 +1,8 @@
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 
 namespace piVC_thu
 {
-    // 这里的顶层设计主要是参考了 Silver
-
     abstract class Block
     {
         public LinkedList<Block> predecessors = new LinkedList<Block>();
@@ -15,13 +14,8 @@ namespace piVC_thu
             to.predecessors.AddLast(from);
         }
 
-        // 也许可以搞一两个带 predecessor 的初始化QAQ
-    }
-
-    sealed class BasicBlock : Block
-    {
-        // statements 里有可能没有 Statement
-        private LinkedList<Statement> statements = new LinkedList<Statement>();
+        // statements 里是可能没有东西的
+        protected LinkedList<Statement> statements = new LinkedList<Statement>();
 
         public void AddStatement(Statement statement)
         {
@@ -29,19 +23,35 @@ namespace piVC_thu
         }
     }
 
+    sealed class BasicBlock : Block
+    {
+    }
+
     sealed class PostconditionBlock : Block
     {
         public Expression condition = default!;
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(statements.Count == 1);
+        }
     }
 
     class HeadBlock : Block
     {
-        public List<Expression> rankingFunction = new List<Expression>();
+        public List<Expression> rankingFunction = default!;
     }
 
     sealed class PreconditionBlock : HeadBlock
     {
         public Expression condition = default!;
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(statements.Count == 1);
+        }
     }
 
     sealed class LoopHeadBlock : HeadBlock

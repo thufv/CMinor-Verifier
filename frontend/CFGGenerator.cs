@@ -21,7 +21,7 @@ namespace piVC_thu
         // 当前正在计算的 function
         Function? currentFunction;
         // block
-        BasicBlock? currentBasicBlock = null;
+        Block? currentBlock = null;
         // post block of loop (for break statement)
         BasicBlock? postLoopBlock = null;
 
@@ -30,13 +30,12 @@ namespace piVC_thu
         Dictionary<string, Struct> structTable = new Dictionary<string, Struct>();
         Dictionary<string, Predicate> predicateTable = new Dictionary<string, Predicate>();
         Stack<Dictionary<string, LocalVariable>> symbolTables = new Stack<Dictionary<string, LocalVariable>>();
-        // 这个是用来作 alpha renaming 的，每个 function 会清空一次
-        // 局部变量作 alpha-renaming 会变成：{name}${number}
-        // 成员变量作 alpha-renaming 会变成：{structName}${memberName}${number}
-        Dictionary<string, int> numberOfVariable = new Dictionary<string, int>();
-        // 我们需要为每一个函数调用搞一个临时变量
-        // 这个临时变量的名字是：{name}#{number}
-        Dictionary<string, int> numberOfCall = new Dictionary<string, int>();
+
+        // 用来作 alpha renaming，以及用来生成临时变量
+        Counter counter = new Counter();
+
+        // 主要是用来帮助表达式知道自己现在是否在一个 annotation 里
+        bool? annotated = null;
 
         public override Expression? VisitMain([NotNull] piParser.MainContext context)
         {
@@ -89,12 +88,10 @@ namespace piVC_thu
                 else
                     throw new ParsingException(ctx, $"duplicate function parameter '{paraName}'");
 
-                if (!numberOfVariable.ContainsKey(paraName))
-                    numberOfVariable.Add(paraName, 0);
-                ParaVariable paraVariable = new ParaVariable
+                LocalVariable paraVariable = new LocalVariable
                 {
                     type = paraTypes[i],
-                    name = alphaRenamed(paraName)
+                    name = counter.GetVariable(paraName)
                 };
 
                 symbolTables.Peek().Add(paraName, paraVariable);
@@ -108,13 +105,15 @@ namespace piVC_thu
                 rv = new LocalVariable
                 {
                     type = (VarType)(returnType),
-                    name = alphaRenamed("rv")
+                    name = counter.GetVariable("rv")
                 };
                 Debug.Assert(rv.name == "rv$1");
             }
 
+            annotated = true;
             PreconditionBlock preconditionBlock = CalcPreconditionBlock(context.beforeFunc().annotationPre(), context.beforeFunc().termination());
             PostconditionBlock postconditionBlock = CalcPostconditionBlock(context.beforeFunc().annotationPost(), rv);
+            annotated = null;
 
             currentFunction = new Function
             {
@@ -128,16 +127,18 @@ namespace piVC_thu
             functionTable.Add(name, currentFunction);
 
             // visit function body
-            currentBasicBlock = new BasicBlock();
+            currentBlock = new BasicBlock();
+            annotated = false;
             foreach (var stmt in context.stmt())
                 Visit(stmt);
-            
+            annotated = null;
+
             // 理想情况下，currentBasicBlock 应该是空，这表示所有的 path 都已经被 return 了
-            if (currentBasicBlock != null)
+            if (currentBlock != null)
             {
                 if (returnType is VoidType)
                 { // 如果函数的返回值类型是 void 的话，我们是允许隐式的 return 的
-                    Block.AddEdge(currentBasicBlock, postconditionBlock);
+                    Block.AddEdge(currentBlock, postconditionBlock);
                 }
                 else
                     throw new ParsingException(context, $"function {name} does not return in all paths.");
@@ -145,8 +146,6 @@ namespace piVC_thu
 
             // 搞定这个函数啦~
             symbolTables.Pop();
-            numberOfVariable.Clear();
-            numberOfCall.Clear();
             currentFunction = null;
 
             return null;
@@ -194,24 +193,24 @@ namespace piVC_thu
                 else
                     throw new ParsingException(ctx, $"duplicate predicate parameter '{paraName}'");
 
-                if (!numberOfVariable.ContainsKey(paraName))
-                    numberOfVariable.Add(paraName, 0);
-                ParaVariable paraVariable = new ParaVariable
+                LocalVariable paraVariable = new LocalVariable
                 {
                     type = paraTypes[i],
-                    name = alphaRenamed(paraName)
+                    name = counter.GetVariable(paraName)
                 };
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
+
+            annotated = true;
             Expression expression = Visit(context.expr())!;
+            annotated = null;
 
             Predicate predicate = new Predicate
             {
                 type = FunType.Get(BoolType.Get(), paraTypes),
                 name = name,
-                expression = expression,
-                annotated = expression.annotated
+                expression = expression
             };
             // 这里我们需要在表达式算完之后再将谓词名放到表里，
             // 因为函数可以递归调用自身，但是谓词是不行的

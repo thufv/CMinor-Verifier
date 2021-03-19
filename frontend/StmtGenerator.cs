@@ -10,9 +10,7 @@ namespace piVC_thu
     {
         public override Expression? VisitVarDeclStmt([NotNull] piParser.VarDeclStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
-
-            // TODO: 这一段也许要怎么 extract 一下，和 for 的那个 decl 一起搞一下
+            Debug.Assert(currentBlock != null);
 
             // 分别依次算出类型、变量名和初始化表达式
             // 这里的顺序其实是 undefined behavior
@@ -22,15 +20,16 @@ namespace piVC_thu
             string name = context.var().IDENT().GetText();
             if (symbolTables.Peek().ContainsKey(name))
                 throw new ParsingException(context, $"duplicate declared variable {name}");
-            Expression? initExpr = context.expr() == null ? null : TypeConfirm(context.expr(), Visit(context.expr())!, type);
+            annotated = false;
+            Expression? initExpr = context.expr() == null ? null : TypeConfirm(context.expr(), type);
+            annotated = null;
 
             // 用上面算出来的类型、变量名和初始化表达式构成一个变量整体
             // 这里注意要做 alpha-renaming
             LocalVariable localVariable = new LocalVariable
             {
                 type = type,
-                name = alphaRenamed(name),
-                initializer = initExpr
+                name = counter.GetVariable(name),
             };
             symbolTables.Peek().Add(name, localVariable);
 
@@ -40,7 +39,7 @@ namespace piVC_thu
                 if (initExpr == null)
                     throw new ParsingException(context, "initial expression is mistakenly wrong. Probably a bug occurs.");
 
-                currentBasicBlock.AddStatement(new VariableAssignStatement
+                currentBlock.AddStatement(new VariableAssignStatement
                 {
                     variable = localVariable,
                     rhs = initExpr
@@ -52,43 +51,46 @@ namespace piVC_thu
 
         public override Expression? VisitExprStmt([NotNull] piParser.ExprStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
+            annotated = false;
             Expression expression = Visit(context.expr())!;
-            currentBasicBlock.AddStatement(new ExpressionStatement
-            {
-                expression = expression
-            });
+            annotated = null;
+
             return null;
         }
 
         public override Expression? VisitIfStmt([NotNull] piParser.IfStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
-            Expression condition = TypeConfirm(context, Visit(context.expr())!, BoolType.Get());
+            // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量
+            // 作为 variable
+            annotated = false;
+            Expression conditionExpression = CompressedCondition(context.expr());
+            annotated = null;
 
-            BasicBlock prevBlock = currentBasicBlock;
+            Block prevBlock = currentBlock;
 
             // then-block
             BasicBlock thenBlock = new BasicBlock();
             Block.AddEdge(prevBlock, thenBlock);
-            currentBasicBlock = thenBlock;
+            currentBlock = thenBlock;
             thenBlock.AddStatement(new AssumeStatement
             {
-                condition = condition
+                condition = conditionExpression
             });
             Visit(context.stmt()[0]);
-            BasicBlock? visitedThenBlock = currentBasicBlock;
+            Block? visitedThenBlock = currentBlock;
 
             // else-block
             BasicBlock elseBlock = new BasicBlock();
             Block.AddEdge(prevBlock, elseBlock);
-            currentBasicBlock = elseBlock;
+            currentBlock = elseBlock;
             Expression notCondition = new NotExpression
             {
-                type = condition.type,
-                expression = condition
+                type = BoolType.Get(),
+                expression = conditionExpression
             };
             elseBlock.AddStatement(new AssumeStatement
             {
@@ -96,21 +98,17 @@ namespace piVC_thu
             });
             if (context.stmt().Length == 2)
                 Visit(context.stmt()[1]);
-            BasicBlock? visitedElseBlock = currentBasicBlock;
+            Block? visitedElseBlock = currentBlock;
 
             // 在访问过之后，相应的 block 可能为空
             // 因为被 break 或者 return 了
             if (visitedThenBlock != null || visitedElseBlock != null)
             {
-                currentBasicBlock = new BasicBlock();
+                currentBlock = new BasicBlock();
                 if (thenBlock != null)
-                {
-                    Block.AddEdge(thenBlock, currentBasicBlock);
-                }
+                    Block.AddEdge(thenBlock, currentBlock);
                 if (elseBlock != null)
-                {
-                    Block.AddEdge(elseBlock, currentBasicBlock);
-                }
+                    Block.AddEdge(elseBlock, currentBlock);
             }
 
             return null;
@@ -118,12 +116,16 @@ namespace piVC_thu
 
         public override Expression? VisitWhileStmt([NotNull] piParser.WhileStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
+            annotated = true;
             LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
-            Block.AddEdge(currentBasicBlock, loopheadBlock);
+            annotated = null;
+            Block.AddEdge(currentBlock, loopheadBlock);
 
-            Expression condition = TypeConfirm(context, Visit(context.expr())!, BoolType.Get());
+            annotated = false;
+            Expression condition = CompressedCondition(context.expr());
+            annotated = null;
 
             // 开一个新的作用域
             symbolTables.Push(new Dictionary<string, LocalVariable>());
@@ -154,30 +156,31 @@ namespace piVC_thu
             Block.AddEdge(exitBlock, postLoopBlock);
 
             // 访问 body
-            currentBasicBlock = bodyBlock;
+            currentBlock = bodyBlock;
             Visit(context.stmt());
-            Block.AddEdge(currentBasicBlock, loopheadBlock);
+            Block.AddEdge(currentBlock, loopheadBlock);
 
             // 结束循环
             symbolTables.Pop();
-            currentBasicBlock = postLoopBlock;
+            currentBlock = postLoopBlock;
 
             return null;
         }
 
-        // for ( var := expr ; expr ; expr)
+        // for ( var := init ; cond ; iter)
         //
         // 等价于
         //
         // {
-        //   var := expr
-        //   while (expr) {
+        //   var := init
+        //   while (cond) {
         //     body
+        //     iter
         //   }
         // }
         public override Expression? VisitForStmt([NotNull] piParser.ForStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
             // find three expressions in the for-statement
             piParser.ExprContext? initExprContext = null, condExprContext = null, iterExprContext = null;
@@ -191,6 +194,8 @@ namespace piVC_thu
                     else if (context.GetChild(i - 1).GetText() == ";" && context.GetChild(i + 1).GetText() == ")")
                         iterExprContext = exprContext;
                 }
+            if (condExprContext == null)
+                throw new ParsingException(context, "no condition in for-loop.");
 
             // 开作用域，但不开新的 block
             symbolTables.Push(new Dictionary<string, LocalVariable>());
@@ -201,20 +206,22 @@ namespace piVC_thu
                 string name = context.var().IDENT().GetText();
                 if (symbolTables.Peek().ContainsKey(name))
                     throw new ParsingException(context, $"duplicate variable {name}");
-                Expression? initExpr = initExprContext != null ? TypeConfirm(context, Visit(initExprContext)!, type) : null;
+
+                annotated = false;
+                Expression? initExpr = initExprContext != null ? TypeConfirm(initExprContext, type) : null;
+                annotated = null;
 
                 LocalVariable localVariable = new LocalVariable
                 {
                     type = type,
-                    name = alphaRenamed(name),
-                    initializer = initExpr
+                    name = counter.GetVariable(name)
                 };
                 symbolTables.Peek().Add(name, localVariable);
 
                 if (initExpr != null)
                 { // 如果是有初始化表达式的话，就想变量声明时我们所作的那样，也是需要将其作为一条语句来处理的
                     // 注意这里是要放到 currentBlock 里
-                    currentBasicBlock.AddStatement(new VariableAssignStatement
+                    currentBlock.AddStatement(new VariableAssignStatement
                     {
                         variable = localVariable,
                         rhs = initExpr
@@ -223,18 +230,23 @@ namespace piVC_thu
             }
 
             // loop head block
+            annotated = true;
             LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
-            Block.AddEdge(currentBasicBlock, loopheadBlock);
+            annotated = null;
+            Block.AddEdge(currentBlock, loopheadBlock);
+            currentBlock = loopheadBlock;
 
             // condition
-            Expression condition = Visit(condExprContext)!;
+            annotated = false;
+            Expression condition = CompressedCondition(condExprContext);
+            annotated = null;
 
             // 开一个 body block
             BasicBlock bodyBlock = new BasicBlock();
-            Block.AddEdge(currentBasicBlock, bodyBlock);
+            Block.AddEdge(loopheadBlock, bodyBlock);
 
             // 将 condition 作为 assume 放到 body block 的首端
-            currentBasicBlock.AddStatement(new AssumeStatement
+            bodyBlock.AddStatement(new AssumeStatement
             {
                 condition = condition
             });
@@ -257,24 +269,24 @@ namespace piVC_thu
             Block.AddEdge(exitBlock, postLoopBlock);
 
             // 访问 body
-            currentBasicBlock = bodyBlock;
+            currentBlock = bodyBlock;
             Visit(context.stmt());
 
+            annotated = false;
             if (iterExprContext != null)
             { // 如果有 iterExpr 的话，需要放到 body block 的最末端
-                Expression iterExpr = Visit(iterExprContext)!;
-                currentBasicBlock.AddStatement(new ExpressionStatement
-                {
-                    expression = iterExpr
-                });
+                // 我们可以无需理会它的返回表达式，因为事实上唯一有副作用的是 function call
+                // 而我们会为 function call 自动生成语句
+                Visit(iterExprContext);
             }
             if (context.assign() != null)
             { // 也可能放到 iteration 位置上的不是 expr，而是一个 assign
                 Debug.Assert(iterExprContext == null);
                 Visit(context.assign());
             }
+            annotated = null;
 
-            Block.AddEdge(currentBasicBlock, loopheadBlock);
+            Block.AddEdge(currentBlock, loopheadBlock);
 
             // 结束循环
             symbolTables.Pop();
@@ -284,20 +296,20 @@ namespace piVC_thu
 
         public override Expression? VisitBreakStmt([NotNull] piParser.BreakStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
             if (postLoopBlock == null)
                 throw new ParsingException(context, "a break statement is not within loop.");
 
-            Block.AddEdge(currentBasicBlock, postLoopBlock);
-            currentBasicBlock = null;
+            Block.AddEdge(currentBlock, postLoopBlock);
+            currentBlock = null;
 
             return null;
         }
 
         public override Expression? VisitReturnStmt([NotNull] piParser.ReturnStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
             Debug.Assert(currentFunction != null);
 
             if (context.expr() == null)
@@ -313,28 +325,32 @@ namespace piVC_thu
                 // 这里需要一个 rv = expr 的语句
                 // 注意这里的 rv 不是在函数体里（可能）定义出来的 rv
                 // 而是一个编译器保留的特殊变量，其类型即是函数的返回类型
-                Expression rhs = TypeConfirm(context, Visit(context.expr())!, currentFunction.rv.type);
-                currentBasicBlock.AddStatement(new VariableAssignStatement
+                annotated = false;
+                Expression rhs = TypeConfirm(context.expr(), currentFunction.rv.type);
+                annotated = null;
+                currentBlock.AddStatement(new VariableAssignStatement
                 {
                     variable = currentFunction.rv,
                     rhs = rhs
                 });
             }
 
-            Block.AddEdge(currentBasicBlock, currentFunction.postconditionBlock);
-            currentBasicBlock = null;
+            Block.AddEdge(currentBlock, currentFunction.postconditionBlock);
+            currentBlock = null;
 
             return null;
         }
 
         public override Expression? VisitAssertStmt([NotNull] piParser.AssertStmtContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
             // 尽管这里的类型应该是已经被 confirm 过一遍了，但多 confirm 一次是更加保险的选择
-            Expression annotation = TypeConfirm(context, Visit(context.annotationWithLabel())!, BoolType.Get());
+            annotated = true;
+            Expression annotation = TypeConfirm(context.annotationWithLabel(), BoolType.Get());
+            annotated = null;
 
-            currentBasicBlock.AddStatement(new AssertStatement
+            currentBlock.AddStatement(new AssertStatement
             {
                 annotation = annotation
             });
@@ -347,7 +363,7 @@ namespace piVC_thu
             foreach (var stmt in context.stmt())
             {
                 Visit(stmt);
-                if (currentBasicBlock == null)
+                if (currentBlock == null)
                     break;
             }
             return null;
@@ -355,13 +371,16 @@ namespace piVC_thu
 
         public override Expression? VisitVarAssign([NotNull] piParser.VarAssignContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
             string name = context.IDENT().GetText();
-            LocalVariable variable = FindLocalVariable(context, name);
-            Expression rhs = Visit(context.expr())!;
+            Variable variable = FindVariable(context, name);
 
-            currentBasicBlock.AddStatement(new VariableAssignStatement
+            annotated = false;
+            Expression rhs = Visit(context.expr())!;
+            annotated = null;
+
+            currentBlock.AddStatement(new VariableAssignStatement
             {
                 variable = variable,
                 rhs = rhs
@@ -371,15 +390,17 @@ namespace piVC_thu
 
         public override Expression? VisitSubAssign([NotNull] piParser.SubAssignContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
+            annotated = false;
             Expression array = Visit(context.expr()[0])!;
             if (array.type is not ArrayType)
                 throw new ParsingException(context, "the expression just before the subscription is not an array.");
-            Expression index = TypeConfirm(context, Visit(context.expr()[1])!, IntType.Get())!;
-            Expression rhs = TypeConfirm(context, Visit(context.expr()[2])!, ((ArrayType)(array.type)).atomicType);
+            Expression index = TypeConfirm(context.expr()[1], IntType.Get())!;
+            Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(array.type)).atomicType);
+            annotated = null;
 
-            currentBasicBlock.AddStatement(new SubscriptAssignStatement
+            currentBlock.AddStatement(new SubscriptAssignStatement
             {
                 array = array,
                 index = index,
@@ -390,12 +411,12 @@ namespace piVC_thu
 
         public override Expression? VisitMemAssign([NotNull] piParser.MemAssignContext context)
         {
-            Debug.Assert(currentBasicBlock != null);
+            Debug.Assert(currentBlock != null);
 
             string structName = context.IDENT()[0].GetText();
             string memberName = context.IDENT()[1].GetText();
-            LocalVariable structVariable = FindLocalVariable(context, structName);
-            if (structVariable.type is not StructType)
+            Variable structVariable = FindVariable(context, structName);
+            if (structVariable is not StructVariable)
                 throw new ParsingException(context, $"request for member '{memberName}' in '{structName}', which is of non-struct type '{nameof(structVariable.type)}'.");
             Struct s = ((StructType)(structVariable.type)).structDefinition;
 
@@ -410,12 +431,15 @@ namespace piVC_thu
                 type = memberVariable.type,
                 name = structVariable.name + "$" + memberName
             };
+            ((StructVariable)(structVariable)).members.Add(memberName, variable);
 
             // 求出右边的表达式
-            Expression rhs = TypeConfirm(context, Visit(context.expr())!, variable.type);
+            annotated = false;
+            Expression rhs = TypeConfirm(context.expr(), variable.type);
+            annotated = null;
 
             // 把赋值语句加到基本块里
-            currentBasicBlock.AddStatement(new VariableAssignStatement
+            currentBlock.AddStatement(new VariableAssignStatement
             {
                 variable = variable,
                 rhs = rhs
@@ -423,12 +447,32 @@ namespace piVC_thu
             return null;
         }
 
-        // ==== utils just for statements ====
+        // utils only for statement generator
 
-        public string alphaRenamed(string name)
+        // 如果一个函数有多个 condition 的话，先把它放到后面QAQ
+        Expression CompressedCondition([NotNull] piParser.ExprContext context)
         {
-            numberOfVariable[name] = numberOfVariable.GetValueOrDefault<string, int>(name) + 1;
-            return name + "$" + numberOfVariable[name];
+            Debug.Assert(currentBlock != null);
+            Expression expression = TypeConfirm(context, BoolType.Get());
+            if (expression is not VariableExpression)
+            {
+                Variable variable = new LocalVariable
+                {
+                    type = BoolType.Get(),
+                    name = counter.GetCondition()
+                };
+                currentBlock.AddStatement(new VariableAssignStatement
+                {
+                    variable = variable,
+                    rhs = expression
+                });
+                expression = new VariableExpression
+                {
+                    type = BoolType.Get(),
+                    variable = variable
+                };
+            }
+            return expression;
         }
     }
 }

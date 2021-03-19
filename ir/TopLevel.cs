@@ -2,8 +2,6 @@ using System.Collections.Generic;
 
 namespace piVC_thu
 {
-    // 这里的顶层设计主要是参考了 TrivialCompiler
-
     class Main
     {
         public LinkedList<Function> functions = new LinkedList<Function>();
@@ -26,8 +24,6 @@ namespace piVC_thu
         public LinkedList<Block> blocks = new LinkedList<Block>();
 
         public LocalVariable? rv;
-
-        // public CallExpression apply(List<Expression> arguments) { TODO }
     }
 
     class Predicate
@@ -38,9 +34,6 @@ namespace piVC_thu
         public FunType type = default!;
         public string name = default!;
         public Expression expression = default!;
-        public bool annotated = default!;
-
-        // public CallExpression apply(List<Expression> arguments) { TODO }
     }
 
     class Struct

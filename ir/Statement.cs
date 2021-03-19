@@ -1,10 +1,12 @@
+using System.Diagnostics.Contracts;
+
 namespace piVC_thu
 {
     abstract class Statement
     {
         // A globally unique integer
         // 主要是为了做谓词分析
-        public int location;
+        public int location { get; }
         static int currentLocation = 0;
 
         public Statement()
@@ -20,7 +22,13 @@ namespace piVC_thu
 
     sealed class VariableAssignStatement : AssignStatement
     {
-        public LocalVariable variable = default!;
+        public Variable variable = default!;
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(variable is LocalVariable || variable is StructVariable);
+        }
     }
 
     sealed class SubscriptAssignStatement : AssignStatement
@@ -28,9 +36,10 @@ namespace piVC_thu
         public Expression array = default!, index = default!;
     }
 
-    sealed class ExpressionStatement : Statement
+    sealed class FunctionCallStatement : Statement
     {
-        public Expression expression = default!;
+        public LocalVariable? lhs = null;
+        public FunctionCallExpression rhs = default!;
     }
 
     sealed class AssertStatement : Statement

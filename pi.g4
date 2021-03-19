@@ -40,11 +40,12 @@ assign:
 
 /* about expression */
 expr:
-	IDENT												# IdentExpr
-	| constant											# ConstExpr
-	| IDENT '(' (expr (',' expr)*)? ')'					# CallExpr
-	| '(' expr ')'										# ParExpr
-	| expr '[' expr ']'									# SubExpr
+	IDENT								# IdentExpr
+	| constant							# ConstExpr
+	| IDENT '(' (expr (',' expr)*)? ')'	# CallExpr
+	| '(' expr ')'						# ParExpr
+	| expr '[' expr ']'					# SubExpr
+	// 为了让 IR 更简单一点，我们仅在非 annotation 中支持新建数组
 	| 'new' atomicType '[' expr ']'						# NewArrayExpr
 	| expr '.' IDENT									# MemExpr
 	| expr '{' expr '<-' expr '}'						# ArrUpdExpr

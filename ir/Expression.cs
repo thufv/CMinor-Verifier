@@ -1,19 +1,16 @@
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 
 namespace piVC_thu
 {
     abstract class Expression
     {
         public VarType type = default!;
-        // "annotated" expression is the expression that contains quantifier,
-        // iff, implication or predicate,
-        // which indicates that the expression must be regarded in annotation.
-        public bool annotated = false;
     }
 
-    sealed class IdentifierExpression : Expression
+    sealed class VariableExpression : Expression
     {
-        public Variable variable;
+        public Variable variable = default!;
     }
 
     abstract class ConstantExpression : Expression { }
@@ -33,31 +30,52 @@ namespace piVC_thu
         public bool constant;
     }
 
-    sealed class CallExpression : Expression
+    // 这是一个极为特殊的 expression，我们规定 expression 的类型不能为 void，
+    // 所以 function call 不能算在常规的 expression 里面。
+    // 并且，function call 只会出现在 FunctionCallStatement 这个 statement 里。
+    sealed class FunctionCallExpression
     {
-        public Function function;
-        public List<Expression> arguments;
+        public Function function = default!;
+        public Variable[] argumentVariables = default!;
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(this.argumentVariables.Length == function.type.paraTypes.Length);
+        }
+    }
+
+    sealed class PredicateCallExpression : Expression
+    {
+        public Predicate predicate = default!;
+        public Expression[] argumentExpressions = default!;
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(this.argumentExpressions.Length == predicate.type.paraTypes.Length);
+        }
     }
 
     sealed class SubscriptExpression : Expression
     {
-        public Expression array, subscript;
+        public Expression array = default!, subscript = default!;
     }
 
     sealed class NewArrayExpression : Expression
     {
-        public Expression length;
-    }
+        public Expression length = default!;
 
-    sealed class MemberExpression : Expression
-    {
-        public Struct host;
-        public MemberVariable member;
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(this.length.type is IntType);
+        }
     }
 
     sealed class ArrayUpdateExpression : Expression
     {
-        public Expression array, index, rhs;
+        public Expression array = default!, index = default!, rhs = default!;
     }
 
     abstract class UnaryExpression : Expression
@@ -65,9 +83,7 @@ namespace piVC_thu
         public Expression expression = default!;
     }
 
-    sealed class NotExpression : UnaryExpression
-    {
-    }
+    sealed class NotExpression : UnaryExpression { }
 
     sealed class NegExpression : UnaryExpression { }
 
@@ -102,8 +118,8 @@ namespace piVC_thu
 
     abstract class QuantifiedExpression : Expression
     {
-        HashSet<QuantifiedVariable> vars;
-        Expression expression;
+        public Dictionary<string, QuantifiedVariable> vars = default!;
+        public Expression expression = default!;
     }
 
     sealed class ForallQuantifiedExpression : QuantifiedExpression { }
