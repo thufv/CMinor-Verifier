@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Diagnostics;
 using System.Collections.Generic;
 
 using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 
 using CommandLine;
 using CommandLine.Text;
@@ -51,31 +53,59 @@ namespace piVC_thu
                 .WithParsed(RunOptions);
         }
 
+        // 返回码的设计是这样的：
+        //  0 表示验证成功
+        //  1 表示验证失败
+        //  2 表示语义错误
+        //  3 表示语法错误
         static void RunOptions(Options opts)
         {
-            // 生成 cfg
-            StreamReader reader = File.OpenText(opts.sourcePath);
-            AntlrInputStream stream = new AntlrInputStream(reader);
-            ITokenSource lexer = new piLexer(stream);
-            ITokenStream tokens = new CommonTokenStream(lexer);
-            piParser parser = new piParser(tokens)
+            try
             {
-                BuildParseTree = true,
-                ErrorHandler = new BailErrorStrategy()
-            };
-            piParser.MainContext tree = parser.main();
-            CFGGenerator generator = new CFGGenerator();
-            Main? cfg = generator.apply(tree);
+                // 首先，我们要生成 cfg！
 
-            // 输出 cfg
-            if (opts.CFGFile != null)
-            {
-                using (TextWriter writer = opts.CFGFile == "stdout"
-                    ? Console.Out
-                    : new StreamWriter(opts.CFGFile))
+                StreamReader reader = File.OpenText(opts.sourcePath);
+
+                AntlrInputStream stream = new AntlrInputStream(reader);
+
+                ITokenSource lexer = new piLexer(stream);
+
+                ITokenStream tokens = new CommonTokenStream(lexer);
+
+                piParser parser = new piParser(tokens);
+
+                // 由于现有的 error listener 或者 handler，
+                // 要么不会终止 parse，要么连行号都不会打印出来……
+                // 所以我们需要写一个新的 listener！
+                parser.RemoveErrorListeners();
+                parser.AddErrorListener(new ThrowingErrorListener());
+
+                piParser.MainContext tree = parser.main();
+                CFGGenerator generator = new CFGGenerator();
+                Main cfg = generator.apply(tree);
+
+                if (opts.CFGFile != null)
                 {
-                    cfg.Print(writer);
+                    // 输出 cfg
+                    using (TextWriter writer = opts.CFGFile == "stdout"
+                        ? Console.Out
+                        : new StreamWriter(opts.CFGFile))
+                    {
+                        cfg.Print(writer);
+                    }
                 }
+
+                Environment.Exit(0);
+            }
+            catch (ParsingException e)
+            {
+                Console.Error.WriteLine($"semantic error: {e.Message}");
+                Environment.Exit(2);
+            }
+            catch (ParseCanceledException e)
+            {
+                Console.Error.WriteLine($"syntax error: {e.Message}");
+                Environment.Exit(3);
             }
         }
     }
