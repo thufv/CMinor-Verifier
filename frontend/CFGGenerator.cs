@@ -48,27 +48,6 @@ namespace piVC_thu
         {
             foreach (var decl in context.decl())
                 Visit(decl);
-
-            // 检查：所有的 ranking function 的元组数量必须是相同的
-            int rankingFunctionSize = -1;
-            Action<HeadBlock> considerHeadBlock = headBlock =>
-            {
-                if (rankingFunctionSize == -1)
-                    rankingFunctionSize = headBlock.rankingFunction.Count;
-                if (headBlock.rankingFunction.Count != rankingFunctionSize)
-                    throw new ParsingException(context,
-                        rankingFunctionSize == 0 || headBlock.rankingFunction.Count == 0
-                            ? "some ranking functions are annotated while the others not"
-                            : "the sizes of the tuple of ranking functions are different.");
-            };
-            foreach (Function function in functionTable.Values)
-            {
-                considerHeadBlock(function.preconditionBlock);
-                foreach (Block block in function.blocks)
-                    if (block is HeadBlock headBlock)
-                        considerHeadBlock(headBlock);
-            }
-
             return null;
         }
 
