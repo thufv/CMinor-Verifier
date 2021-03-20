@@ -87,7 +87,7 @@ namespace piVC_thu
             for (int i = 0; i < parameters.Length; ++i)
                 writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
             writer.WriteLine(")");
-            writer.Write("\t:=");
+            writer.Write("\t:= ");
             expression.Print(writer);
         }
     }
