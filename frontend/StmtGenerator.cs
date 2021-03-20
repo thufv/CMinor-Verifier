@@ -370,12 +370,14 @@ namespace piVC_thu
 
         public override Expression? VisitStmtBlock([NotNull] piParser.StmtBlockContext context)
         {
+            symbolTables.Push(new Dictionary<string, LocalVariable>());
             foreach (var stmt in context.stmt())
             {
                 Visit(stmt);
                 if (currentBlock == null)
                     break;
             }
+            symbolTables.Pop();
             return null;
         }
 

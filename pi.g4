@@ -4,9 +4,9 @@ grammar pi;
 
 /* top level */
 
-main: decl* EOF;
+main: def* EOF;
 
-decl: funcDef | structDef | predDef;
+def: funcDef | structDef | predDef;
 
 funcDef:
 	beforeFunc (type | 'void') IDENT '(' (var (',' var)*)? ')' '{' stmt* '}';

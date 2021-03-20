@@ -46,8 +46,8 @@ namespace piVC_thu
 
         public override Expression? VisitMain([NotNull] piParser.MainContext context)
         {
-            foreach (var decl in context.decl())
-                Visit(decl);
+            foreach (var def in context.def())
+                Visit(def);
             return null;
         }
 
