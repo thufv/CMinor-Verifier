@@ -59,7 +59,7 @@ namespace piVC_thu
                     throw new ParsingException(context,
                         rankingFunctionSize == 0 || headBlock.rankingFunction.Count == 0
                             ? "some ranking functions are annotated while the others not"
-                            : "the sizes of the tuple of ranking functions are different");
+                            : "the sizes of the tuple of ranking functions are different.");
             };
             foreach (Function function in functionTable.Values)
             {
@@ -180,6 +180,7 @@ namespace piVC_thu
             }
             Struct s = new Struct(name, members);
             structTable.Add(name, s);
+            main.structs.AddLast(s);
             return null;
         }
 
@@ -228,6 +229,7 @@ namespace piVC_thu
             // 这里我们需要在表达式算完之后再将谓词名放到表里，
             // 因为函数可以递归调用自身，但是谓词是不行的
             predicateTable.Add(name, predicate);
+            main.predicates.AddLast(predicate);
 
             symbolTables.Pop();
 

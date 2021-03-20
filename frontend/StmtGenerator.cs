@@ -193,56 +193,49 @@ namespace piVC_thu
             Debug.Assert(currentBlock != null);
             Debug.Assert(currentFunction != null);
 
-            // find three expressions in the for-statement
-            piParser.ExprContext? initExprContext = null, condExprContext = null, iterExprContext = null;
-            for (int i = 0; i < context.ChildCount; ++i)
-                if (context.GetChild(i) is piParser.ExprContext exprContext)
-                {
-                    if (context.GetChild(i - 1).GetText() == ":=" && context.GetChild(i + 1).GetText() == ";")
-                        initExprContext = exprContext;
-                    else if (context.GetChild(i - 1).GetText() == ";" && context.GetChild(i + 1).GetText() == ";")
-                        condExprContext = exprContext;
-                    else if (context.GetChild(i - 1).GetText() == ";" && context.GetChild(i + 1).GetText() == ")")
-                        iterExprContext = exprContext;
-                }
-            if (condExprContext == null)
-                throw new ParsingException(context, "no condition in for-loop.");
-
             // 开作用域，但不开新的 block
             symbolTables.Push(new Dictionary<string, LocalVariable>());
 
-            if (context.var() != null)
+            if (context.forInit() != null)
             { // declaration and possible initialization
-                VarType type = CalcType(context.var().type());
-                string name = context.var().IDENT().GetText();
-                if (symbolTables.Peek().ContainsKey(name))
-                    throw new ParsingException(context, $"duplicate variable {name}");
+                if (context.forInit().var() != null)
+                {
+                    VarType type = CalcType(context.forInit().var().type());
+                    string name = context.forInit().var().IDENT().GetText();
+                    if (symbolTables.Peek().ContainsKey(name))
+                        throw new ParsingException(context, $"duplicate variable {name}");
 
-                annotated = false;
-                Expression? initExpr = initExprContext != null ? TypeConfirm(initExprContext, type) : null;
-                annotated = null;
+                    LocalVariable localVariable = type is StructType
+                        ? new StructVariable
+                        {
+                            type = type,
+                            name = counter.GetVariable(name)
+                        }
+                        : new LocalVariable
+                        {
+                            type = type,
+                            name = counter.GetVariable(name)
+                        };
+                    symbolTables.Peek().Add(name, localVariable);
 
-                LocalVariable localVariable = type is StructType
-                    ? new StructVariable
-                    {
-                        type = type,
-                        name = counter.GetVariable(name)
+                    if (context.forInit().expr() != null)
+                    { // 如果是有初始化表达式的话，就想变量声明时我们所作的那样，也是需要将其作为一条语句来处理的
+                        // 注意这里是要放到 currentBlock 里
+                        annotated = false;
+                        Expression initExpr = TypeConfirm(context.forInit().expr(), type);
+                        annotated = null;
+
+                        currentBlock.AddStatement(new VariableAssignStatement
+                        {
+                            variable = localVariable,
+                            rhs = initExpr
+                        });
                     }
-                    : new LocalVariable
-                    {
-                        type = type,
-                        name = counter.GetVariable(name)
-                    };
-                symbolTables.Peek().Add(name, localVariable);
-
-                if (initExpr != null)
-                { // 如果是有初始化表达式的话，就想变量声明时我们所作的那样，也是需要将其作为一条语句来处理的
-                    // 注意这里是要放到 currentBlock 里
-                    currentBlock.AddStatement(new VariableAssignStatement
-                    {
-                        variable = localVariable,
-                        rhs = initExpr
-                    });
+                }
+                else
+                {
+                    Debug.Assert(context.forIter().assign() != null);
+                    Visit(context.forIter().assign());
                 }
             }
 
@@ -254,7 +247,7 @@ namespace piVC_thu
 
             // condition
             annotated = false;
-            Expression condition = CompressedCondition(condExprContext);
+            Expression condition = CompressedCondition(context.expr());
             annotated = null;
 
             // 开一个 body block
@@ -286,16 +279,19 @@ namespace piVC_thu
             Visit(context.stmt());
 
             annotated = false;
-            if (iterExprContext != null)
-            { // 如果有 iterExpr 的话，需要放到 body block 的最末端
-                // 我们可以无需理会它的返回表达式，因为事实上唯一有副作用的是 function call
-                // 而我们会为 function call 自动生成语句
-                Visit(iterExprContext);
-            }
-            if (context.assign() != null)
-            { // 也可能放到 iteration 位置上的不是 expr，而是一个 assign
-                Debug.Assert(iterExprContext == null);
-                Visit(context.assign());
+            if (context.forIter() != null)
+            {
+                if (context.forIter().expr() != null)
+                { // 如果有 iterExpr 的话，需要放到 body block 的最末端
+                  // 我们可以无需理会它的返回表达式，因为事实上唯一有副作用的是 function call
+                  // 而我们会为 function call 自动生成语句
+                    Visit(context.forIter());
+                }
+                else
+                { // 也可能放到 iteration 位置上的不是 expr，而是一个 assign
+                    Debug.Assert(context.forIter().assign() != null);
+                    Visit(context.forIter().assign());
+                }
             }
             annotated = null;
 
@@ -408,19 +404,22 @@ namespace piVC_thu
 
             annotated = false;
             Expression array = NotNullConfirm(context.expr()[0]);
-            if (array.type is not ArrayType)
-                throw new ParsingException(context, "the expression just before the subscription is not an array.");
-            Expression index = TypeConfirm(context.expr()[1], IntType.Get());
-            Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(array.type)).atomicType);
-            annotated = null;
-
-            currentBlock.AddStatement(new SubscriptAssignStatement
+            if (array.type is ArrayType arrayType)
             {
-                array = array,
-                index = index,
-                rhs = rhs
-            });
-            return null;
+                Expression index = TypeConfirm(context.expr()[1], IntType.Get());
+                Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(array.type)).atomicType);
+                annotated = null;
+
+                currentBlock.AddStatement(new SubscriptAssignStatement
+                {
+                    array = array,
+                    index = index,
+                    rhs = rhs
+                });
+                return null;
+            }
+            else
+                throw new ParsingException(context, "the expression just before the subscription is not an array.");
         }
 
         public override Expression? VisitMemAssign([NotNull] piParser.MemAssignContext context)
@@ -488,5 +487,7 @@ namespace piVC_thu
             }
             return expression;
         }
+
+        // TODO: visit assign
     }
 }

@@ -18,19 +18,20 @@ predDef:
 
 /* about statement */
 stmt:
-	var (':=' expr)? ';'						# VarDeclStmt
-	| expr ';'									# ExprStmt
-	| assign ';'								# AssignStmt
-	| 'if' '(' expr ')' stmt ('else' stmt)?		# IfStmt
-	| 'while' beforeBranch '(' expr ')' stmt	# WhileStmt
-	| 'for' beforeBranch '(' (var (':=' expr)?)? ';' expr ';' (
-		assign
-		| expr
-	)? ')' stmt					# ForStmt
-	| 'break' ';'				# BreakStmt
-	| 'return' expr? ';'		# ReturnStmt
-	| annotationWithLabel ';'	# AssertStmt
-	| '{' stmt* '}'				# StmtBlock;
+	var (':=' expr)? ';'												# VarDeclStmt
+	| expr ';'															# ExprStmt
+	| assign ';'														# AssignStmt
+	| 'if' '(' expr ')' stmt ('else' stmt)?								# IfStmt
+	| 'while' beforeBranch '(' expr ')' stmt							# WhileStmt
+	| 'for' beforeBranch '(' forInit? ';' expr ';' forIter? ')' stmt	# ForStmt
+	| 'break' ';'														# BreakStmt
+	| 'return' expr? ';'												# ReturnStmt
+	| annotationWithLabel ';'											# AssertStmt
+	| '{' stmt* '}'														# StmtBlock;
+
+forInit: var (':=' expr)? | assign;
+
+forIter: assign | expr;
 
 assign:
 	IDENT ':=' expr					# VarAssign

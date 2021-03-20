@@ -18,7 +18,7 @@ namespace piVC_thu
                 if (structTable.ContainsKey(structName))
                     return structTable[structName].type;
                 else
-                    throw new ParsingException(context, "unknown type");
+                    throw new ParsingException(context, $"unknown type '{structName}'.");
             }
             else
             { // atomic type or array type

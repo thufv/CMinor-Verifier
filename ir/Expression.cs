@@ -182,7 +182,7 @@ namespace piVC_thu
         {
             writer.Write("(");
             le.Print(writer);
-            writer.Write(GetOperator());
+            writer.Write($" {GetOperator()} ");
             re.Print(writer);
             writer.Write(")");
         }

@@ -11,23 +11,23 @@ namespace piVC_thu
 
         public void Print(TextWriter writer)
         {
-            writer.WriteLine("// structs");
+            // writer.WriteLine("// structs");
             foreach (Struct s in structs)
             {
                 s.Print(writer);
                 writer.WriteLine("");
             }
-            writer.WriteLine("");
+            // writer.WriteLine("");
 
-            writer.WriteLine("// predicates");
+            // writer.WriteLine("// predicates");
             foreach (Predicate p in predicates)
             {
                 p.Print(writer);
                 writer.WriteLine("");
             }
-            writer.WriteLine("");
+            // writer.WriteLine("");
 
-            writer.WriteLine("// functions");
+            // writer.WriteLine("// functions");
             foreach (Function f in functions)
             {
                 f.Print(writer);
@@ -83,11 +83,11 @@ namespace piVC_thu
 
         public void Print(TextWriter writer)
         {
-            writer.Write($"[predicate] {name} (");
+            writer.WriteLine($"[predicate] {name}\n(");
             for (int i = 0; i < parameters.Length; ++i)
                 writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
             writer.WriteLine(")");
-            writer.Write(":=");
+            writer.Write("\t:=");
             expression.Print(writer);
         }
     }
