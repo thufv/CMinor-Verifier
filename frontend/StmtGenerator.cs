@@ -77,7 +77,7 @@ namespace piVC_thu
             // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量
             // 作为 variable
             annotated = false;
-            Expression conditionExpression = CompressedExpression(TypeConfirm(context, BoolType.Get()), counter.GetCondition);
+            Expression conditionExpression = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
             annotated = null;
 
             Block prevBlock = currentBlock;
