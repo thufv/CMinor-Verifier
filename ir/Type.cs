@@ -12,7 +12,7 @@ namespace piVC_thu
     // 这里我们尝试拿 singleton design pattern 来简化繁琐的比较
     abstract class Type { }
 
-    abstract class VarType : Type, ReturnType { }
+    abstract class VarType : Type { }
 
     abstract class AtomicType : VarType { }
 
@@ -103,74 +103,35 @@ namespace piVC_thu
         }
     }
 
-    sealed class VoidType : ReturnType
+    class FunType : Type
     {
-        private static VoidType singleton = new VoidType();
-
-        private VoidType() { }
-
-        public static VoidType Get()
-        {
-            return singleton;
-        }
-
-        public override string ToString()
-        {
-            return "void";
-        }
-    }
-
-    sealed class StructType : VarType
-    {
-        public Struct structDefinition;
-
-        private static Dictionary<Struct, StructType> singletons = new Dictionary<Struct, StructType>();
-
-        private StructType(Struct structDefinition)
-        {
-            this.structDefinition = structDefinition;
-        }
-
-        public static StructType Get(Struct structDefinition)
-        {
-            if (!singletons.ContainsKey(structDefinition))
-            {
-                singletons.Add(structDefinition, new StructType(structDefinition));
-            }
-            return singletons[structDefinition];
-        }
-
-        public override string ToString()
-        {
-            return $"struct {structDefinition.name}";
-        }
-    }
-
-    // 这里是用了一个 interface 配合 implement 来实现了一个 "sum type"
-    interface ReturnType { }
-
-    sealed class FunType : Type
-    {
-        public ReturnType returnType;
-        public VarType[] paraTypes;
+        public List<VarType> returnTypes;
+        public List<VarType> paraTypes;
 
         private static LinkedList<FunType> singletons = new LinkedList<FunType>();
 
-        private FunType(ReturnType returnType, VarType[] paraTypes)
+        protected FunType(List<VarType> returnType, List<VarType> paraTypes)
         {
-            this.returnType = returnType;
+            this.returnTypes = returnType;
             this.paraTypes = paraTypes;
         }
 
-        public static FunType Get(ReturnType returnType, VarType[] paraTypes)
+        public static FunType Get(List<VarType> returnType, List<VarType> paraTypes)
         {
             Func<FunType, bool> Equals = (FunType funType) =>
             {
-                if (returnType != funType.returnType) return false;
-                if (paraTypes.Length != funType.paraTypes.Length) return false;
-                for (int i = 0; i < funType.paraTypes.Length; ++i)
+                if (returnType.Count != funType.returnTypes.Count)
+                    return false;
+                for (int i = 0; i < funType.paraTypes.Count; ++i)
                     if (paraTypes[i] != funType.paraTypes[i])
                         return false;
+
+                if (paraTypes.Count != funType.paraTypes.Count)
+                    return false;
+                for (int i = 0; i < funType.paraTypes.Count; ++i)
+                    if (paraTypes[i] != funType.paraTypes[i])
+                        return false;
+
                 return true;
             };
             foreach (FunType funType in singletons)
@@ -185,9 +146,42 @@ namespace piVC_thu
 
         public override string ToString()
         {
-            string s = returnType.ToString()!;
+            string s = "";
+            for (int i = 0; i < returnTypes.Count; ++i)
+            {
+                if (i > 0) s += ",";
+                s += paraTypes[i].ToString();
+            }
             s += "(";
-            for (int i = 0; i < paraTypes.Length; ++i)
+            for (int i = 0; i < paraTypes.Count; ++i)
+            {
+                if (i > 0) s += ",";
+                s += paraTypes[i].ToString();
+            }
+            s += ")";
+            return s;
+        }
+    }
+
+    sealed class PredType : FunType
+    {
+        private PredType(List<VarType> paraTypes) :
+            base(new List<VarType> {
+                BoolType.Get()
+            }, paraTypes)
+        { }
+
+        public static PredType Get(List<VarType> paraTypes)
+        {
+            return (PredType)(FunType.Get(new List<VarType> {
+                BoolType.Get()
+            }, paraTypes));
+        }
+
+        public override string ToString()
+        {
+            string s = "predicate(";
+            for (int i = 0; i < paraTypes.Count; ++i)
             {
                 if (i > 0) s += ",";
                 s += paraTypes[i].ToString();

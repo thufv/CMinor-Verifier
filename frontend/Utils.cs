@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+
+using System.Diagnostics;
 
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
@@ -58,7 +61,7 @@ namespace piVC_thu
             return expression;
         }
 
-        Variable FindVariable([NotNull] ParserRuleContext context, string name)
+        LocalVariable FindVariable([NotNull] ParserRuleContext context, string name)
         {
             // consider each symbol table reversely
             foreach (var symbolTable in symbolTables)
@@ -84,6 +87,30 @@ namespace piVC_thu
                 throw new ParsingException(context, $"try to use a void expression.");
         }
 
+        // 把一个表达式压缩成一个变量。
+        // 也就是说，添加一个辅助变量用来表示这个表达式，
+        // 然后传回一个只有一个变量的表达式。
+        VariableExpression CompressedExpression(Expression expression, Func<string> getName)
+        {
+            if (expression is VariableExpression ve)
+                return ve;
+            else
+            {
+                Debug.Assert(currentBlock != null);
+                LocalVariable variable = new LocalVariable
+                {
+                    type = expression.type,
+                    name = getName()
+                };
+                currentBlock.AddStatement(new VariableAssignStatement
+                {
+                    variable = variable,
+                    rhs = expression
+                });
+                return new VariableExpression(variable);
+            }
+        }
+
         // 从 Counter 里得到的所有数字都是全局唯一的
         class Counter
         {
@@ -99,13 +126,13 @@ namespace piVC_thu
             }
 
             // 我们需要为每一个函数调用搞一个临时变量
-            // 这个临时变量的名字是：{name}#{number}
+            // 这个临时变量的名字是：_call${number}
             Dictionary<string, int> callCounter = new Dictionary<string, int>();
             public string GetCall(string variable)
             {
                 int number = callCounter.GetValueOrDefault<string, int>(variable) + 1;
                 callCounter[variable] = number;
-                return variable + "$" + number;
+                return "_call_" + variable + "$" + number;
             }
 
             // 如果一个 condition 不是只有一个变量组成的，
@@ -129,6 +156,32 @@ namespace piVC_thu
             public string GetArg()
             {
                 return "_arg" + "$" + ++newArgNumber;
+            }
+
+            // 为数组下标搞一个临时变量：_sub#{number}
+            // 这是为了方便 assert 其合法性（runtime assertion）
+            int subCounter = 0;
+            public string GetSub()
+            {
+                return "_sub" + "$" + ++subCounter;
+            }
+
+            // 为数组长度搞一个临时变量：_length#{number}
+            // 这一方面是为了方便 assert 其非负性
+            // 另一方面也是为了方便 assert 下标的合法性
+            int lengthCounter = 0;
+            public string GetLength()
+            {
+                return "_length" + "$" + ++lengthCounter;
+            }
+
+            // 为除数搞一个临时变量：_divisor#{number}
+            // 这是为了方便 assert 其非零性
+            // 方便起见，这里我们统一考虑 /, div 和 %
+            int divisorCounter = 0;
+            public string GetDivisor()
+            {
+                return "_divisor" + "$" + ++divisorCounter;
             }
         }
     }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Diagnostics;
 using System.Collections.Generic;
 
 using Antlr4.Runtime;
@@ -25,7 +24,7 @@ namespace piVC_thu
 
             [Option("printCFG",
                 Required = false,
-                HelpText = "The file ('stdout' as console) to which the control flow graph is printed.")]
+                HelpText = "The file (or 'console') to which the control flow graph is printed.")]
             public string? CFGFile { get; set; } = null;
 
             [Usage(ApplicationAlias = "piVC-thu")]
@@ -82,12 +81,12 @@ namespace piVC_thu
 
                 piParser.MainContext tree = parser.main();
                 CFGGenerator generator = new CFGGenerator();
-                Main cfg = generator.apply(tree);
+                IRMain cfg = generator.Apply(tree);
 
                 if (opts.CFGFile != null)
                 {
                     // 输出 cfg
-                    using (TextWriter writer = opts.CFGFile == "stdout"
+                    using (TextWriter writer = opts.CFGFile == "console"
                         ? Console.Out
                         : new StreamWriter(opts.CFGFile))
                     {
@@ -95,7 +94,17 @@ namespace piVC_thu
                     }
                 }
 
-                Environment.Exit(0);
+                Verifier verifier = new Verifier(Console.Out);
+                if (verifier.Apply(cfg))
+                {
+                    Console.WriteLine("All specifications hold.");
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    Console.WriteLine("There exists a specification that does not hold.");
+                    Environment.Exit(1);
+                }
             }
             catch (ParsingException e)
             {

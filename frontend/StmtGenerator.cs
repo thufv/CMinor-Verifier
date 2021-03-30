@@ -1,5 +1,8 @@
-using System.Diagnostics;
+using System;
+
 using System.Collections.Generic;
+
+using System.Diagnostics;
 
 using Antlr4.Runtime.Misc;
 
@@ -19,37 +22,35 @@ namespace piVC_thu
             string name = context.var().IDENT().GetText();
             if (symbolTables.Peek().ContainsKey(name))
                 throw new ParsingException(context, $"duplicate declared variable {name}");
-            annotated = false;
-            Expression? initExpr = context.expr() == null ? null : TypeConfirm(context.expr(), type);
-            annotated = null;
 
             // 用上面算出来的类型、变量名和初始化表达式构成一个变量整体
-            LocalVariable localVariable = type is StructType
-                ? new StructVariable
-                {
-                    type = type,
-                    name = counter.GetVariable(name)
-                }
-                : new LocalVariable
-                {
-                    type = type,
-                    name = counter.GetVariable(name)
-                };
+            LocalVariable localVariable;
+            switch (type)
+            {
+                case StructType st:
+                    localVariable = new StructVariable(st, counter.GetVariable(name));
+                    break;
+                case ArrayType at:
+                    localVariable = new ArrayVariable
+                    {
+                        type = at,
+                        name = counter.GetArray()
+                    };
+                    break;
+                default:
+                    localVariable = new LocalVariable
+                    {
+                        type = type,
+                        name = name
+                    };
+                    break;
+            }
             symbolTables.Peek().Add(name, localVariable);
-
-
 
             // 如果说有初始化表达式存在，那么其实就相当于一个赋值语句，所以也需要放到现在的 block 里
             if (context.expr() != null)
             {
-                if (initExpr == null)
-                    throw new ParsingException(context, "initial expression is mistakenly wrong. Probably a bug occurs.");
-
-                currentBlock.AddStatement(new VariableAssignStatement
-                {
-                    variable = localVariable,
-                    rhs = initExpr
-                });
+                Assign(localVariable, context.expr());
             }
 
             return null;
@@ -76,7 +77,7 @@ namespace piVC_thu
             // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量
             // 作为 variable
             annotated = false;
-            Expression conditionExpression = CompressedCondition(context.expr());
+            Expression conditionExpression = CompressedExpression(TypeConfirm(context, BoolType.Get()), counter.GetCondition);
             annotated = null;
 
             Block prevBlock = currentBlock;
@@ -96,11 +97,7 @@ namespace piVC_thu
             // else-block
             BasicBlock elseBlock = new BasicBlock(currentFunction, prevBlock);
             currentBlock = elseBlock;
-            Expression notCondition = new NotExpression
-            {
-                type = BoolType.Get(),
-                expression = conditionExpression
-            };
+            Expression notCondition = new NotExpression(conditionExpression);
             elseBlock.AddStatement(new AssumeStatement
             {
                 condition = notCondition
@@ -137,7 +134,7 @@ namespace piVC_thu
             annotated = null;
 
             annotated = false;
-            Expression condition = CompressedCondition(context.expr());
+            Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
             annotated = null;
 
             // 开一个新的作用域
@@ -152,11 +149,7 @@ namespace piVC_thu
 
             // 开一个 exit loop block，里面其实只有一条语句，就是 assume notCondition
             BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Expression notCondition = new NotExpression
-            {
-                type = BoolType.Get(),
-                expression = condition
-            };
+            Expression notCondition = new NotExpression(condition);
             exitBlock.AddStatement(new AssumeStatement
             {
                 condition = notCondition
@@ -205,12 +198,8 @@ namespace piVC_thu
                     if (symbolTables.Peek().ContainsKey(name))
                         throw new ParsingException(context, $"duplicate variable {name}");
 
-                    LocalVariable localVariable = type is StructType
-                        ? new StructVariable
-                        {
-                            type = type,
-                            name = counter.GetVariable(name)
-                        }
+                    LocalVariable localVariable = type is StructType structType
+                        ? new StructVariable(structType, counter.GetVariable(name))
                         : new LocalVariable
                         {
                             type = type,
@@ -219,18 +208,7 @@ namespace piVC_thu
                     symbolTables.Peek().Add(name, localVariable);
 
                     if (context.forInit().expr() != null)
-                    { // 如果是有初始化表达式的话，就想变量声明时我们所作的那样，也是需要将其作为一条语句来处理的
-                        // 注意这里是要放到 currentBlock 里
-                        annotated = false;
-                        Expression initExpr = TypeConfirm(context.forInit().expr(), type);
-                        annotated = null;
-
-                        currentBlock.AddStatement(new VariableAssignStatement
-                        {
-                            variable = localVariable,
-                            rhs = initExpr
-                        });
-                    }
+                        Assign(localVariable, context.forInit().expr());
                 }
                 else
                 {
@@ -247,7 +225,7 @@ namespace piVC_thu
 
             // condition
             annotated = false;
-            Expression condition = CompressedCondition(context.expr());
+            Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
             annotated = null;
 
             // 开一个 body block
@@ -261,11 +239,7 @@ namespace piVC_thu
 
             // 开一个 exit loop block，其中其实只有一条 assume 语句
             BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Expression notCondition = new NotExpression
-            {
-                type = BoolType.Get(),
-                expression = condition
-            };
+            Expression notCondition = new NotExpression(condition);
             exitBlock.AddStatement(new AssumeStatement
             {
                 condition = notCondition
@@ -325,24 +299,15 @@ namespace piVC_thu
             if (context.expr() == null)
             {
                 // 如果没有返回值的话，函数的返回类型也必须是 void
-                if (currentFunction.type.returnType is not VoidType)
-                    throw new ParsingException(context, $"return-statement with no value, in function returning '{currentFunction.type.returnType}'");
+                if (currentFunction.type.returnTypes.Count > 0)
+                    throw new ParsingException(context, $"return-statement with no value, in function returning '{currentFunction.type.returnTypes}'");
             }
             else
             {
-                if (currentFunction.rv == null)
+                if (currentFunction.rvs.Count == 0)
                     throw new ParsingException(context, $"return-statement with a value, in function returning 'void'");
-                // 这里需要一个 rv = expr 的语句
-                // 注意这里的 rv 不是在函数体里（可能）定义出来的 rv
-                // 而是一个编译器保留的特殊变量，其类型即是函数的返回类型
-                annotated = false;
-                Expression rhs = TypeConfirm(context.expr(), currentFunction.rv.type);
-                annotated = null;
-                currentBlock.AddStatement(new VariableAssignStatement
-                {
-                    variable = currentFunction.rv,
-                    rhs = rhs
-                });
+                Debug.Assert(currentFunction.rvs.Count == 1);
+                Assign(currentFunction.rvs[0], context.expr());
             }
 
             Block.AddEdge(currentBlock, currentFunction.postconditionBlock);
@@ -386,17 +351,9 @@ namespace piVC_thu
             Debug.Assert(currentBlock != null);
 
             string name = context.IDENT().GetText();
-            Variable variable = FindVariable(context, name);
+            LocalVariable variable = FindVariable(context, name);
+            Assign(variable, context.expr());
 
-            annotated = false;
-            Expression rhs = NotNullConfirm(context.expr());
-            annotated = null;
-
-            currentBlock.AddStatement(new VariableAssignStatement
-            {
-                variable = variable,
-                rhs = rhs
-            });
             return null;
         }
 
@@ -405,23 +362,38 @@ namespace piVC_thu
             Debug.Assert(currentBlock != null);
 
             annotated = false;
-            Expression array = NotNullConfirm(context.expr()[0]);
-            if (array.type is ArrayType arrayType)
+            LocalVariable lv = FindVariable(context, context.IDENT().GetText());
+            if (lv is ArrayVariable av)
             {
-                Expression index = TypeConfirm(context.expr()[1], IntType.Get());
-                Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(array.type)).atomicType);
+                VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[1], IntType.Get()), counter.GetSub);
+                // runtime assertion: subscript >= 0
+                currentBlock.AddStatement(new AssertStatement()
+                {
+                    annotation = new LEExpression(new IntConstantExpression(0), subscript)
+                });
+                // runtime assertion: subscript < length
+                if (av.length != null)
+                {
+                    currentBlock.AddStatement(new AssertStatement()
+                    {
+                        annotation = new LTExpression(subscript, new VariableExpression(av.length))
+                    });
+                }
+
+                Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(av.type)).atomicType);
                 annotated = null;
 
                 currentBlock.AddStatement(new SubscriptAssignStatement
                 {
-                    array = array,
-                    index = index,
+                    array = av,
+                    subscript = subscript,
                     rhs = rhs
                 });
-                return null;
+
+                return new SubscriptExpression(new VariableExpression(av), subscript);
             }
             else
-                throw new ParsingException(context, "the expression just before the subscription is not an array.");
+                throw new ParsingException(context, "request for an element in a non-array variable.");
         }
 
         public override Expression? VisitMemAssign([NotNull] piParser.MemAssignContext context)
@@ -431,65 +403,110 @@ namespace piVC_thu
             string structName = context.IDENT()[0].GetText();
             string memberName = context.IDENT()[1].GetText();
             Variable structVariable = FindVariable(context, structName);
-            if (structVariable is not StructVariable)
+            if (structVariable is StructVariable sv)
+            {
+                if (!((StructType)(sv.type)).structDefinition.members.ContainsKey(memberName))
+                    throw new ParsingException(context, $"'struct {structName}' has no member named '{memberName}'.");
+                Debug.Assert(sv.members.ContainsKey(memberName));
+
+                LocalVariable variable = sv.members[memberName];
+
+                // 求出右边的表达式
+                annotated = false;
+                Expression rhs = TypeConfirm(context.expr(), variable.type);
+                annotated = null;
+
+                // 把赋值语句加到基本块里
+                currentBlock.AddStatement(new VariableAssignStatement
+                {
+                    variable = variable,
+                    rhs = rhs
+                });
+            }
+            else
                 throw new ParsingException(context, $"request for member '{memberName}' in '{structName}', which is of non-struct type '{structVariable.type}'.");
-            Struct s = ((StructType)(structVariable.type)).structDefinition;
-
-            // 先根据名字算出来是哪个 member
-            if (!s.members.ContainsKey(memberName))
-                throw new ParsingException(context, $"'struct {s.name}' has no member named '{memberName}'.");
-            MemberVariable memberVariable = s.members[memberName];
-
-            // 将 MemberVariable 转成 LocalVariable 统一处理
-            LocalVariable variable = new LocalVariable
-            {
-                type = memberVariable.type,
-                name = structVariable.name + "$" + memberName
-            };
-            ((StructVariable)(structVariable)).members.Add(memberName, variable);
-
-            // 求出右边的表达式
-            annotated = false;
-            Expression rhs = TypeConfirm(context.expr(), variable.type);
-            annotated = null;
-
-            // 把赋值语句加到基本块里
-            currentBlock.AddStatement(new VariableAssignStatement
-            {
-                variable = variable,
-                rhs = rhs
-            });
             return null;
         }
 
         // utils only for statement generator
 
-        // 如果一个函数有多个 condition 的话，先把它放到后面QAQ
-        Expression CompressedCondition([NotNull] piParser.ExprContext context)
+        void Assign(LocalVariable lhsVariable, [NotNull] piParser.ExprContext rhsContext)
         {
             Debug.Assert(currentBlock != null);
-            Expression expression = TypeConfirm(context, BoolType.Get());
-            if (expression is not VariableExpression)
-            {
-                Variable variable = new LocalVariable
-                {
-                    type = BoolType.Get(),
-                    name = counter.GetCondition()
-                };
-                currentBlock.AddStatement(new VariableAssignStatement
-                {
-                    variable = variable,
-                    rhs = expression
-                });
-                expression = new VariableExpression
-                {
-                    type = BoolType.Get(),
-                    variable = variable
-                };
-            }
-            return expression;
-        }
 
-        // TODO: visit assign
+            annotated = false;
+            Expression rhs = TypeConfirm(rhsContext, lhsVariable.type);
+            annotated = null;
+
+            switch (rhs.type)
+            {
+                case StructType st:
+                    Debug.Assert(lhsVariable is StructVariable);
+                    StructVariable ls = (StructVariable)lhsVariable;
+
+                    // 如果右边的表达式的类型是一个 struct 的话，
+                    // 那么它一定是 VariableExpression
+                    Debug.Assert(rhs is VariableExpression);
+                    Debug.Assert(((VariableExpression)rhs).variable is StructVariable);
+                    StructVariable rs = (StructVariable)(((VariableExpression)rhs).variable);
+
+                    // 为每一个成员单独赋值
+                    foreach (MemberVariable mv in st.structDefinition.members.Values)
+                    {
+                        Debug.Assert(ls.members.ContainsKey(mv.name));
+                        Debug.Assert(rs.members.ContainsKey(mv.name));
+                        Debug.Assert(ls.members[mv.name].type == mv.type);
+                        Debug.Assert(ls.members[mv.name].type == mv.type);
+
+                        currentBlock.AddStatement(new VariableAssignStatement
+                        {
+                            variable = ls.members[mv.name],
+                            rhs = new VariableExpression(rs.members[mv.name])
+                        });
+                    }
+                    break;
+                case ArrayType at:
+                    Debug.Assert(lhsVariable is ArrayVariable);
+
+                    currentBlock.AddStatement(new VariableAssignStatement
+                    {
+                        variable = lhsVariable,
+                        rhs = rhs
+                    });
+
+                    // 右边有两种可能：
+                    // 一种是 variable expression；
+                    // 另一种是 array update expression
+                    if (rhs is VariableExpression ve && ve.variable is ArrayVariable av)
+                    {
+                        Debug.Assert(ve.variable is ArrayVariable);
+                        currentBlock.AddStatement(new VariableAssignStatement
+                        {
+                            variable = ((ArrayVariable)lhsVariable).length,
+                            rhs = new VariableExpression(av.length)
+                        });
+                    }
+                    else if (rhs is ArrayUpdateExpression aue)
+                    {
+                        currentBlock.AddStatement(new VariableAssignStatement
+                        {
+                            variable = ((ArrayVariable)lhsVariable).length,
+                            rhs = aue.length
+                        });
+                    }
+                    else
+                        throw new ArgumentException(
+                            message: "the expression at right hand side has an array type but it is neither single variable expression nor array update expression. Probably a bug occurs.",
+                            paramName: nameof(rhs));
+                    break;
+                default:
+                    currentBlock.AddStatement(new VariableAssignStatement
+                    {
+                        variable = lhsVariable,
+                        rhs = rhs
+                    });
+                    break;
+            }
+        }
     }
 }

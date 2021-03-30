@@ -10,21 +10,26 @@ A lot of work needs to do, include the followings and something other.
 
 - [x] The grammar is not totally correct and sufficiently tested.
 - [x] The design and implementation of CFG.
+  - [x] runtime assertion
+    - [x] divided by 0：`/` `div`
+    - [x] the length of array > 0: 
 - [ ] The framework of verification algorithm and a baseline implementation.
   - [ ] SMT solver abstraction
-  - [ ] substitution
+  - [x] substitution
+  - [ ] runtime assertion in annotation
 - [ ] printer
-  - [ ] control flow graph
-    - [ ] more beautiful printer to avoid too long line
-  - [ ] basic path
-  - [ ] verification condition
+  - [x] control flow graph
+  - [x] basic path
   - [ ] counter model
+  - [ ] label of annotation
 - [ ] The documentation for code, task and environments.
 - [ ] The testcases and judging system.
 
 ### Level II: Make things better
 
-- [ ] label of annotation: now I just omit it for simplicity
+- [ ] more beautiful printer
+  - [ ] label of annotation: now I just omit it for simplicity
+  - [ ] the row and column of the beginning of each block
 - [ ] Target code (assembly) generator
 - [ ] Find a student to test
 

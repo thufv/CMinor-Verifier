@@ -3,22 +3,13 @@ using System.Collections.Generic;
 
 namespace piVC_thu
 {
-    class Main
+    class IRMain
     {
         public LinkedList<Function> functions = new LinkedList<Function>();
         public LinkedList<Predicate> predicates = new LinkedList<Predicate>();
-        public LinkedList<Struct> structs = new LinkedList<Struct>();
 
         public void Print(TextWriter writer)
         {
-            // writer.WriteLine("// structs");
-            foreach (Struct s in structs)
-            {
-                s.Print(writer);
-                writer.WriteLine("");
-            }
-            // writer.WriteLine("");
-
             // writer.WriteLine("// predicates");
             foreach (Predicate p in predicates)
             {
@@ -39,9 +30,11 @@ namespace piVC_thu
 
     class Function
     {
+        // 注意，这个 type 在 CFG 中
         public FunType type = default!;
+
         public string name = default!;
-        public LocalVariable[] parameters = default!;
+        public List<LocalVariable> parameters = default!;
 
         public PreconditionBlock preconditionBlock = default!;
         public PostconditionBlock postconditionBlock = default!;
@@ -51,12 +44,15 @@ namespace piVC_thu
         // this is only for convenience.
         public LinkedList<Block> blocks = new LinkedList<Block>();
 
-        public LocalVariable? rv;
+        // 如果是 void，那么就为空
+        // 如果是 int, float, bool 或者 array，那么就只有一个
+        // 如果是 struct 的话，就有 struct 的成员数量那么多个
+        public List<LocalVariable> rvs = new List<LocalVariable>();
 
         public void Print(TextWriter writer)
         {
-            writer.WriteLine($"[function] {type.returnType} {name} \n(");
-            for (int i = 0; i < parameters.Length; ++i)
+            writer.WriteLine($"[function] {type.returnTypes} {name} \n(");
+            for (int i = 0; i < parameters.Count; ++i)
                 writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
             writer.WriteLine(")");
 
@@ -76,42 +72,19 @@ namespace piVC_thu
         // a predicate can be regarded as a function,
         // of which the return value is bool and the body
         // is just one return statement.
-        public FunType type = default!;
+        public PredType type = default!;
         public string name = default!;
-        public LocalVariable[] parameters = default!;
+        public List<LocalVariable> parameters = default!;
         public Expression expression = default!;
 
         public void Print(TextWriter writer)
         {
             writer.WriteLine($"[predicate] {name}\n(");
-            for (int i = 0; i < parameters.Length; ++i)
+            for (int i = 0; i < parameters.Count; ++i)
                 writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
             writer.WriteLine(")");
             writer.Write("\t:= ");
             expression.Print(writer);
-        }
-    }
-
-    class Struct
-    {
-        public StructType type;
-        public string name;
-
-        public Dictionary<string, MemberVariable> members;
-
-        public Struct(string name, Dictionary<string, MemberVariable> members)
-        {
-            this.name = name;
-            this.members = members;
-            this.type = StructType.Get(this);
-        }
-
-        public void Print(TextWriter writer)
-        {
-            writer.WriteLine($"[struct] {name}\n{{");
-            foreach (MemberVariable member in members.Values)
-                writer.WriteLine($"\t{member.name}: {member.type};");
-            writer.WriteLine("}}");
         }
     }
 }

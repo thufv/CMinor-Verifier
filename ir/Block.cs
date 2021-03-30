@@ -1,5 +1,6 @@
 using System.IO;
 using System.Collections.Generic;
+
 using System.Diagnostics.Contracts;
 
 namespace piVC_thu
@@ -16,7 +17,7 @@ namespace piVC_thu
         }
 
         // statements 里是可能没有东西的
-        protected LinkedList<Statement> statements = new LinkedList<Statement>();
+        public LinkedList<Statement> statements = new LinkedList<Statement>();
 
         public void AddStatement(Statement statement)
         {
@@ -92,6 +93,7 @@ namespace piVC_thu
         void ObjectInvariant()
         {
             Contract.Invariant(statements.Count == 0);
+            Contract.Invariant(predecessors.Count == 1);
             Contract.Invariant(successors.Count == 0);
         }
 
@@ -114,6 +116,12 @@ namespace piVC_thu
         public HeadBlock() { }
         public HeadBlock(Function currentFunction, Block? predecessor)
             : base(currentFunction, predecessor) { }
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(rankingFunction.Count > 0);
+        }
 
         protected void PrintRankingFunction(TextWriter writer)
         {
@@ -140,6 +148,7 @@ namespace piVC_thu
         {
             Contract.Invariant(statements.Count == 0);
             Contract.Invariant(predecessors.Count == 0);
+            Contract.Invariant(successors.Count == 1);
         }
 
         public override void Print(TextWriter writer)

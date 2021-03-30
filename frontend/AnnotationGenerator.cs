@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace piVC_thu
         // as we need a differnt return type...
         List<Expression> CalcRankingFunction([NotNull] piParser.TerminationContext context)
         {
-            return new List<Expression>(context.expr().Select(exprContext => NotNullConfirm(exprContext)));
+            return new List<Expression>(context.expr().Select(exprContext => TypeConfirm(exprContext, IntType.Get())));
         }
 
         PreconditionBlock CalcPreconditionBlock([NotNull] piParser.AnnotationPreContext annotationPreContext, piParser.TerminationContext terminationContext)
@@ -57,18 +58,20 @@ namespace piVC_thu
             };
         }
 
-        PostconditionBlock CalcPostconditionBlock([NotNull] piParser.AnnotationPostContext context, LocalVariable? rv)
+        PostconditionBlock CalcPostconditionBlock([NotNull] piParser.AnnotationPostContext context, List<LocalVariable> rvs)
         {
             // 这里我们开一个只有 rv 的假作用域
-            if (rv != null)
-                symbolTables.Push(new Dictionary<string, LocalVariable>() {
-                    { "rv", rv}
-                });
+            var scope = new Dictionary<string, LocalVariable>();
+            Debug.Assert(rvs.Count == 1);
+            foreach (LocalVariable rv in rvs)
+            {
+                scope.Add("rv", rv);
+            }
+            symbolTables.Push(scope);
 
             Expression condition = NotNullConfirm(context);
 
-            if (rv != null)
-                symbolTables.Pop();
+            symbolTables.Pop();
 
             return new PostconditionBlock
             {

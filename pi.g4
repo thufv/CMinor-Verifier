@@ -35,7 +35,7 @@ forIter: assign | expr;
 
 assign:
 	IDENT ':=' expr					# VarAssign
-	| expr '[' expr ']' ':=' expr	# SubAssign
+	| IDENT '[' expr ']' ':=' expr	# SubAssign
 	// 可以有结果为 struct 类型的表达式——事实上只能是函数的返回值， 但这种表达式不是左值，不能放到赋值符号的右边
 	| IDENT '.' IDENT ':=' expr # MemAssign;
 

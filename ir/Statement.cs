@@ -1,4 +1,6 @@
 using System.IO;
+using System.Collections.Generic;
+
 using System.Diagnostics.Contracts;
 
 namespace piVC_thu
@@ -28,12 +30,13 @@ namespace piVC_thu
 
     sealed class VariableAssignStatement : AssignStatement
     {
-        public Variable variable = default!;
+        public LocalVariable variable = default!;
 
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
-            Contract.Invariant(variable is LocalVariable || variable is StructVariable);
+            Contract.Invariant(variable is not QuantifiedVariable);
+            Contract.Invariant(variable.type == rhs.type);
         }
 
         public override void Print(TextWriter writer)
@@ -46,20 +49,20 @@ namespace piVC_thu
 
     sealed class SubscriptAssignStatement : AssignStatement
     {
-        public Expression array = default!, index = default!;
+        public ArrayVariable array = default!;
+        public VariableExpression subscript = default!;
 
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
             Contract.Invariant(array.type is ArrayType);
+            Contract.Invariant(subscript.type is IntType);
         }
 
         public override void Print(TextWriter writer)
         {
-            writer.Write("\t(");
-            array.Print(writer);
-            writer.Write("[");
-            index.Print(writer);
+            writer.Write($"\t({array.name}[");
+            subscript.Print(writer);
             writer.Write($"]: {((ArrayType)(array.type)).atomicType}) := ");
             rhs.Print(writer);
             writer.WriteLine("");
@@ -68,17 +71,20 @@ namespace piVC_thu
 
     sealed class FunctionCallStatement : Statement
     {
-        public LocalVariable? lhs = null;
+        public List<LocalVariable> lhs = new List<LocalVariable>();
         public FunctionCallExpression rhs = default!;
 
         public override void Print(TextWriter writer)
         {
             writer.Write("\t");
-            writer.Write(
-                (lhs != null
-                    ? $"({lhs.name}: {lhs.type})"
-                    : "(void)")
-                + " := ");
+            foreach (LocalVariable lv in lhs)
+            {
+                writer.Write(
+                    (lhs != null
+                        ? $"({lv.name}: {lv.type})"
+                        : "(void)")
+                    + " := ");
+            }
             rhs.Print(writer);
             writer.WriteLine("");
         }

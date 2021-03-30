@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 
 namespace piVC_thu
@@ -13,15 +12,11 @@ namespace piVC_thu
     // 额外的，成员变量也会被转成 LocalVariable 来处理
     class LocalVariable : Variable { }
 
-    class StructVariable : LocalVariable
+    class ArrayVariable : LocalVariable
     {
-        public Dictionary<string, LocalVariable> members = new Dictionary<string, LocalVariable>();
-
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(this.type is StructType);
-        }
+        // 为空有可能是因为还没初始化
+        // 也可能是因为是这个数组是某个函数的返回值，所以数组长度被 havoc 了QAQ
+        public LocalVariable length = default!;
     }
 
     sealed class QuantifiedVariable : LocalVariable

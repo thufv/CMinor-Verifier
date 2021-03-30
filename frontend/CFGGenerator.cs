@@ -1,5 +1,6 @@
-using System;
 using System.Collections.Generic;
+
+using System.Diagnostics;
 
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
@@ -15,7 +16,7 @@ namespace piVC_thu
     partial class CFGGenerator : piBaseVisitor<Expression?>
     {
         // 最终计算出来的 IR 主体
-        Main main = default!;
+        IRMain main = default!;
 
         // 当前正在计算的 function
         Function? currentFunction;
@@ -37,10 +38,81 @@ namespace piVC_thu
         bool? annotated = null;
 
         // 真正的主函数
-        public Main apply([NotNull] piParser.MainContext context)
+        public IRMain Apply([NotNull] piParser.MainContext context)
         {
-            main = new Main();
+            main = new IRMain();
             Visit(context);
+
+            // 把函数和谓词的参数、返回值和类型“拍扁”
+            // 也就是说把 struct 消解成几个普通的变量
+            foreach (Function function in functionTable.Values)
+            {
+                // 拍扁参数及其类型
+                List<LocalVariable> flattenedParameters = new List<LocalVariable>();
+                List<VarType> flattenedParaTypes = new List<VarType>();
+                for (int i = 0; i < function.parameters.Count; ++i)
+                {
+                    if (function.parameters[i] is StructVariable structParameter)
+                    {
+                        foreach (LocalVariable member in structParameter.members.Values)
+                        {
+                            flattenedParameters.Add(member);
+                            flattenedParaTypes.Add(member.type);
+                        }
+                    }
+                    else
+                    {
+                        flattenedParameters.Add(function.parameters[i]);
+                        flattenedParaTypes.Add(function.parameters[i].type);
+                    }
+                }
+                function.parameters = flattenedParameters;
+
+                if (function.rvs.Count > 0 && function.rvs[0] is StructVariable structRV)
+                {
+                    // 拍扁返回值
+                    Debug.Assert(function.rvs.Count == 1);
+
+                    List<LocalVariable> flattenedRV = new List<LocalVariable>();
+                    foreach (LocalVariable member in structRV.members.Values)
+                    {
+                        flattenedRV.Add(member);
+                    }
+                    function.rvs = flattenedRV;
+                }
+
+                List<VarType> flattenedReturnTypes = new List<VarType>();
+                foreach (LocalVariable rv in function.rvs)
+                {
+                    flattenedReturnTypes.Add(rv.type);
+                }
+                function.type = FunType.Get(flattenedReturnTypes, flattenedParaTypes);
+            }
+            foreach (Predicate predicate in predicateTable.Values)
+            {
+                // 拍扁参数及其类型
+                List<LocalVariable> flattenedParameters = new List<LocalVariable>();
+                List<VarType> flattenedParaTypes = new List<VarType>();
+                for (int i = 0; i < predicate.parameters.Count; ++i)
+                {
+                    if (predicate.parameters[i] is StructVariable structParameter)
+                    {
+                        foreach (LocalVariable member in structParameter.members.Values)
+                        {
+                            flattenedParameters.Add(member);
+                            flattenedParaTypes.Add(member.type);
+                        }
+                    }
+                    else
+                    {
+                        flattenedParameters.Add(predicate.parameters[i]);
+                        flattenedParaTypes.Add(predicate.parameters[i].type);
+                    }
+                }
+                predicate.type = PredType.Get(flattenedParaTypes);
+                predicate.parameters = flattenedParameters;
+            }
+
             return main;
         }
 
@@ -59,13 +131,13 @@ namespace piVC_thu
 
             // 把所有的参数加到符号表里
             int paraNum = context.var().Length;
-            VarType[] paraTypes = new VarType[paraNum];
-            LocalVariable[] parameters = new LocalVariable[paraNum];
+            List<VarType> paraTypes = new List<VarType>();
+            List<LocalVariable> parameters = new List<LocalVariable>();
             HashSet<string> paraNames = new HashSet<string>();
             for (int i = 0; i < paraNum; ++i)
             {
                 var ctx = context.var()[i];
-                paraTypes[i] = CalcType(ctx.type());
+                paraTypes.Add(CalcType(ctx.type()));
                 string paraName = ctx.IDENT().GetText();
                 if (paraName == "rv")
                     throw new ParsingException(ctx, "'rv' is not permitted as parameter name, as it's used to indicate the return value in postcondition.");
@@ -79,36 +151,49 @@ namespace piVC_thu
                     type = paraTypes[i],
                     name = counter.GetVariable(paraName)
                 };
-                parameters[i] = paraVariable;
+                parameters.Add(paraVariable);
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
 
             // 算出 returnType，如果其不是 void，那么就搞出一个 rv 来
-            ReturnType returnType = context.type() != null ? CalcType(context.type()) : VoidType.Get();
-            LocalVariable? rv = null;
-            if (returnType is VarType)
+            List<VarType> returnTypes = new List<VarType>();
+            List<LocalVariable> rvs = new List<LocalVariable>();
+            if (context.type() != null)
             {
-                rv = new LocalVariable
+                VarType returnType = CalcType(context.type());
+                returnTypes.Add(returnType);
+
+                if (returnType is VarType varType)
                 {
-                    type = (VarType)(returnType),
-                    name = counter.GetVariable("rv")
-                };
+                    if (varType is StructType sv)
+                    {
+                        rvs.Add(new StructVariable(sv, counter.GetVariable("rv")));
+                    }
+                    else
+                    {
+                        rvs.Add(new LocalVariable
+                        {
+                            type = varType,
+                            name = counter.GetVariable("rv")
+                        });
+                    }
+                }
             }
 
             annotated = true;
             PreconditionBlock preconditionBlock = CalcPreconditionBlock(context.beforeFunc().annotationPre(), context.beforeFunc().termination());
-            PostconditionBlock postconditionBlock = CalcPostconditionBlock(context.beforeFunc().annotationPost(), rv);
+            PostconditionBlock postconditionBlock = CalcPostconditionBlock(context.beforeFunc().annotationPost(), rvs);
             annotated = null;
 
             currentFunction = new Function
             {
-                type = FunType.Get(returnType, paraTypes),
+                type = FunType.Get(returnTypes, paraTypes),
                 name = name,
                 parameters = parameters,
                 preconditionBlock = preconditionBlock,
                 postconditionBlock = postconditionBlock,
-                rv = rv
+                rvs = rvs
             };
             main.functions.AddLast(currentFunction);
             functionTable.Add(name, currentFunction);
@@ -123,7 +208,7 @@ namespace piVC_thu
             // 理想情况下，currentBasicBlock 应该是空，这表示所有的 path 都已经被 return 了
             if (currentBlock != null)
             {
-                if (returnType is VoidType)
+                if (returnTypes.Count == 0)
                 { // 如果函数的返回值类型是 void 的话，我们是允许隐式的 return 的
                     Block.AddEdge(currentBlock, postconditionBlock);
                 }
@@ -143,7 +228,7 @@ namespace piVC_thu
             string name = CalcDefName(context, context.IDENT());
 
             // parse member variables
-            Dictionary<string, MemberVariable> members = new Dictionary<string, MemberVariable>();
+            var members = new SortedDictionary<string, MemberVariable>();
             foreach (var member in context.var())
             {
                 string memberName = member.IDENT().GetText();
@@ -159,7 +244,6 @@ namespace piVC_thu
             }
             Struct s = new Struct(name, members);
             structTable.Add(name, s);
-            main.structs.AddLast(s);
             return null;
         }
 
@@ -171,13 +255,13 @@ namespace piVC_thu
 
             // calculate parameters
             int paraNum = context.var().Length;
-            LocalVariable[] parameters = new LocalVariable[paraNum];
-            VarType[] paraTypes = new VarType[paraNum];
+            List<LocalVariable> parameters = new List<LocalVariable>();
+            List<VarType> paraTypes = new List<VarType>();
             HashSet<string> paraNames = new HashSet<string>();
             for (int i = 0; i < paraNum; ++i)
             {
                 var ctx = context.var()[i];
-                paraTypes[i] = CalcType(ctx.type());
+                paraTypes.Add(CalcType(ctx.type()));
                 string paraName = ctx.IDENT().GetText();
                 if (!paraNames.Contains(paraName))
                     paraNames.Add(paraName);
@@ -189,7 +273,7 @@ namespace piVC_thu
                     type = paraTypes[i],
                     name = counter.GetVariable(paraName)
                 };
-                parameters[i] = paraVariable;
+                parameters.Add(paraVariable);
 
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
@@ -200,7 +284,7 @@ namespace piVC_thu
 
             Predicate predicate = new Predicate
             {
-                type = FunType.Get(BoolType.Get(), paraTypes),
+                type = PredType.Get(paraTypes),
                 name = name,
                 parameters = parameters,
                 expression = expression
