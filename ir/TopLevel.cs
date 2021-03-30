@@ -39,7 +39,7 @@ namespace piVC_thu
         public PreconditionBlock preconditionBlock = default!;
         public PostconditionBlock postconditionBlock = default!;
 
-        // All blocks, containing precondition block and postcondition block.
+        // All blocks except precondition block and postcondition block.
         // For minimization we don't need the following one,
         // this is only for convenience.
         public LinkedList<Block> blocks = new LinkedList<Block>();

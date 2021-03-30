@@ -13,14 +13,14 @@ A lot of work needs to do, include the followings and something other.
   - [x] runtime assertion
     - [x] divided by 0：`/` `div`
     - [x] the length of array > 0: 
-- [ ] The framework of verification algorithm and a baseline implementation.
-  - [ ] SMT solver abstraction
+- [x] The framework of verification algorithm and a baseline implementation.
+  - [x] SMT solver abstraction
   - [x] substitution
-  - [ ] runtime assertion in annotation
+  - [x] runtime assertion in annotation
 - [ ] printer
   - [x] control flow graph
   - [x] basic path
-  - [ ] counter model
+  - [x] counter model
   - [ ] label of annotation
 - [ ] The documentation for code, task and environments.
 - [ ] The testcases and judging system.
@@ -31,7 +31,7 @@ A lot of work needs to do, include the followings and something other.
   - [ ] label of annotation: now I just omit it for simplicity
   - [ ] the row and column of the beginning of each block
 - [ ] Target code (assembly) generator
-- [ ] Find a student to test
+- [x] Find a student to test
 
 ### Level III: Bonus for fun
 
