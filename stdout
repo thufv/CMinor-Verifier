@@ -1,0 +1,47 @@
+[function] System.Collections.Generic.List`1[piVC_thu.VarType] fun 
+(
+)
+_PRECOND#1:
+	successors: _BASIC#1
+	@pre true
+	#rankingfunction
+	(
+	)
+
+_BASIC#1:
+	predecessors: _PRECOND#1
+	successors: _LOOPHEAD#1
+	(ans: int) := 1
+	(sum: int) := 0
+	(i$1: int) := 0
+
+_LOOPHEAD#1:
+	predecessors: _BASIC#1 _BASIC#2
+	successors: _BASIC#2 _BASIC#3
+	@invariant true
+	#rankingfunction
+	(
+	)
+	(_condition$1: bool) := (i$1 < 0)
+
+_BASIC#2:
+	predecessors: _LOOPHEAD#1
+	successors: _LOOPHEAD#1
+	assume _condition$1
+	(sum: int) := (sum + i$1)
+	(i$1: int) := (i$1 + 1)
+
+_BASIC#3:
+	predecessors: _LOOPHEAD#1
+	successors: _BASIC#4
+	assume !_condition$1
+
+_BASIC#4:
+	predecessors: _BASIC#3
+	successors: _POSTCOND#1
+	(rv$1: int) := ans
+
+_POSTCOND#1:
+	predecessors: _BASIC#4
+	@post (rv$1 = 1)
+

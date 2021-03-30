@@ -20,6 +20,8 @@ namespace piVC_thu
             Expr expr = ExpressionToZ3Expr(expression).Simplify();
             Debug.Assert(expr is BoolExpr);
 
+            Console.WriteLine($"CheckValid: {expr}");
+
             // Z3 默认求解的是 satisfiable
             // 为了判断 valid，我们需要先取反
             solver.Assert(ctx.MkNot((BoolExpr)expr));
@@ -121,18 +123,21 @@ namespace piVC_thu
                         Expr le = ExpressionToZ3Expr(be.le);
                         Expr re = ExpressionToZ3Expr(be.re);
 
-                        Debug.Assert(le is ArithExpr);
-                        Debug.Assert(re is ArithExpr);
-
                         switch (be)
                         {
                             case MultiExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkMul(new ArithExpr[] {
                                     (ArithExpr)le,
                                     (ArithExpr)re
                                 });
                             case FloatDivExpression:
                             case DivExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkDiv((ArithExpr)le, (ArithExpr)re);
                             case ModExpression:
                                 Debug.Assert(le is IntExpr);
@@ -140,26 +145,50 @@ namespace piVC_thu
 
                                 return ctx.MkMod((IntExpr)le, (IntExpr)re);
                             case AddExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkAdd(new ArithExpr[] {
                                     (ArithExpr)le,
                                     (ArithExpr)re
                                 });
                             case SubExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkSub(new ArithExpr[] {
                                     (ArithExpr)le,
                                     (ArithExpr)re
                                 });
                             case LTExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkLt((ArithExpr)le, (ArithExpr)re);
                             case LEExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkLe((ArithExpr)le, (ArithExpr)re);
                             case GTExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkGt((ArithExpr)le, (ArithExpr)re);
                             case GEExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkGe((ArithExpr)le, (ArithExpr)re);
                             case EQExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkEq((ArithExpr)le, (ArithExpr)re);
                             case NEExpression:
+                                Debug.Assert(le is ArithExpr);
+                                Debug.Assert(re is ArithExpr);
+
                                 return ctx.MkNot(ctx.MkEq((ArithExpr)le, (ArithExpr)re));
                             case AndExpression:
                                 Debug.Assert(le is BoolExpr);

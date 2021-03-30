@@ -14,7 +14,7 @@ namespace piVC_thu
         public Expression tailCondition = default!;
 
         // null 表示没有啦
-        public List<Expression>? tailRankingFunction;
+        public List<Expression> tailRankingFunction = new List<Expression>();
 
         [ContractInvariantMethod]
         void ObjectInvariant()
