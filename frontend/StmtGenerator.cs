@@ -120,9 +120,9 @@ namespace piVC_thu
             if (visitedThenBlock != null || visitedElseBlock != null)
             {
                 currentBlock = new BasicBlock(currentFunction);
-                if (thenBlock != null)
+                if (visitedThenBlock != null)
                     Block.AddEdge(thenBlock, currentBlock);
-                if (elseBlock != null)
+                if (visitedElseBlock != null)
                     Block.AddEdge(elseBlock, currentBlock);
             }
 
