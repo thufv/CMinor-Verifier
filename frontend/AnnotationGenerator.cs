@@ -62,7 +62,7 @@ namespace piVC_thu
         {
             // 这里我们开一个只有 rv 的假作用域
             var scope = new Dictionary<string, LocalVariable>();
-            Debug.Assert(rvs.Count == 1);
+            Debug.Assert(rvs.Count <= 1);
             foreach (LocalVariable rv in rvs)
             {
                 scope.Add("rv", rv);
