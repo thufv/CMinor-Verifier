@@ -167,6 +167,8 @@ namespace piVC_thu
 
     sealed class LoopHeadBlock : HeadBlock
     {
+        // 这里的 statements 是用来算 condition 的！
+
         public Expression invariant = default!;
 
         static int numberCounter = 0;

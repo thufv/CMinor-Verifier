@@ -46,7 +46,7 @@ namespace piVC_thu
                     localVariable = new LocalVariable
                     {
                         type = type,
-                        name = name
+                        name = counter.GetVariable(name)
                     };
                     break;
             }
@@ -140,6 +140,9 @@ namespace piVC_thu
             annotated = true;
             LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
             annotated = null;
+
+            // to calculate condition
+            currentBlock = loopheadBlock;
 
             annotated = false;
             Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
