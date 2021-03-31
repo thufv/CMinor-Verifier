@@ -145,6 +145,8 @@ namespace piVC_thu
             }
 
             // 我们也需要为每一个新数组搞一个临时变量：_array#{number}
+            // 注意：这个仅用于 new 出来的数组。
+            // 有名字的数组，包括局部变量、参数或返回值，还是会被视为变量来处理。
             int newArrayCounter = 0;
             public string GetArray()
             {

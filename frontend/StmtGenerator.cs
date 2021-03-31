@@ -34,7 +34,12 @@ namespace piVC_thu
                     localVariable = new ArrayVariable
                     {
                         type = at,
-                        name = counter.GetArray()
+                        name = counter.GetVariable(name),
+                        length = new LocalVariable
+                        {
+                            type = IntType.Get(),
+                            name = counter.GetLength()
+                        }
                     };
                     break;
                 default:
@@ -466,6 +471,7 @@ namespace piVC_thu
                     }
                     break;
                 case ArrayType at:
+                    Console.WriteLine($"{lhsVariable.name}: {lhsVariable.type}");
                     Debug.Assert(lhsVariable is ArrayVariable);
 
                     currentBlock.AddStatement(new VariableAssignStatement

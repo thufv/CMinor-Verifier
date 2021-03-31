@@ -146,13 +146,34 @@ namespace piVC_thu
                 else
                     throw new ParsingException(ctx, $"duplicate function parameter '{paraName}'");
 
-                LocalVariable paraVariable = new LocalVariable
+                LocalVariable paraVariable;
+                if (paraTypes[i] is StructType sv)
                 {
-                    type = paraTypes[i],
-                    name = counter.GetVariable(paraName)
-                };
-                parameters.Add(paraVariable);
+                    paraVariable = new StructVariable(sv, counter.GetVariable(paraName));
+                }
+                else if (paraTypes[i] is ArrayType av)
+                {
+                    paraVariable = new ArrayVariable
+                    {
+                        type = paraTypes[i],
+                        name = counter.GetVariable(paraName),
+                        length = new LocalVariable
+                        {
+                            type = IntType.Get(),
+                            name = counter.GetLength()
+                        }
+                    };
+                }
+                else
+                {
+                    paraVariable = new LocalVariable
+                    {
+                        type = paraTypes[i],
+                        name = counter.GetVariable(paraName)
+                    };
+                }
 
+                parameters.Add(paraVariable);
                 symbolTables.Peek().Add(paraName, paraVariable);
             }
 
@@ -169,6 +190,19 @@ namespace piVC_thu
                     if (varType is StructType sv)
                     {
                         rvs.Add(new StructVariable(sv, counter.GetVariable("rv")));
+                    }
+                    else if (varType is ArrayType av)
+                    {
+                        rvs.Add(new ArrayVariable
+                        {
+                            type = varType,
+                            name = counter.GetVariable("rv"),
+                            length = new LocalVariable
+                            {
+                                type = IntType.Get(),
+                                name = counter.GetLength()
+                            }
+                        });
                     }
                     else
                     {

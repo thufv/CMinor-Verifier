@@ -14,8 +14,7 @@ namespace piVC_thu
 
     class ArrayVariable : LocalVariable
     {
-        // 为空有可能是因为还没初始化
-        // 也可能是因为是这个数组是某个函数的返回值，所以数组长度被 havoc 了QAQ
+        // 只有在 new array 的时候需要对 length 作一个非负性的 runtime assertion
         public LocalVariable length = default!;
     }
 

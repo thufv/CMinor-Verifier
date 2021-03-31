@@ -644,9 +644,16 @@ namespace piVC_thu
 
     sealed class LengthExpression : UnaryExpression
     {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(expression.type is ArrayType);
+            Contract.Invariant(expression is VariableExpression || expression is ArrayUpdateExpression);
+        }
+
         public LengthExpression(Expression expression)
         {
-            Debug.Assert(this.expression.type is ArrayType);
+            Debug.Assert(expression.type is ArrayType);
             this.type = IntType.Get();
             this.expression = expression;
         }
@@ -656,6 +663,26 @@ namespace piVC_thu
             writer.Write("|");
             expression.Print(writer);
             writer.Write("|");
+        }
+
+        public override Expression Substitute(LocalVariable s, Expression t)
+        {
+            if (expression is VariableExpression ve)
+            {
+                Debug.Assert(ve.variable is ArrayVariable);
+                if (((ArrayVariable)(ve.variable)).length == s)
+                    return t;
+                else
+                    return this;
+            }
+            else
+            {
+                Debug.Assert(expression is ArrayUpdateExpression);
+                if (((ArrayUpdateExpression)expression).length.variable == s)
+                    return t;
+                else
+                    return this;
+            }
         }
     }
 }
