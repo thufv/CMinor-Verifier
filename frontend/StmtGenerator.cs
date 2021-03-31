@@ -373,7 +373,7 @@ namespace piVC_thu
             LocalVariable lv = FindVariable(context, context.IDENT().GetText());
             if (lv is ArrayVariable av)
             {
-                VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[1], IntType.Get()), counter.GetSub);
+                VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[0], IntType.Get()), counter.GetSub);
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
                 {
@@ -388,7 +388,7 @@ namespace piVC_thu
                     });
                 }
 
-                Expression rhs = TypeConfirm(context.expr()[2], ((ArrayType)(av.type)).atomicType);
+                Expression rhs = TypeConfirm(context.expr()[1], ((ArrayType)(av.type)).atomicType);
                 annotated = null;
 
                 currentBlock.AddStatement(new SubscriptAssignStatement
