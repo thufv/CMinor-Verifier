@@ -316,6 +316,8 @@ namespace piVC_thu
             Expression expression = NotNullConfirm(context.expr());
             annotated = null;
 
+            // 最后再把这个加到谓词表里，避免其表达式中有对自身的引用。
+
             Predicate predicate = new Predicate
             {
                 type = PredType.Get(paraTypes),

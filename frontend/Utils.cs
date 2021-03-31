@@ -66,7 +66,11 @@ namespace piVC_thu
             // consider each symbol table reversely
             foreach (var symbolTable in symbolTables)
                 if (symbolTable.ContainsKey(name))
+                {
+                    // Console.WriteLine($"Found a variable of name {name} and type {symbolTable[name].type}.");
+
                     return symbolTable[name];
+                }
             throw new ParsingException(context, $"cannot find local variable {name}.");
         }
         bool LocalVariableExists(string name)

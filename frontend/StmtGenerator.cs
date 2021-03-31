@@ -52,6 +52,9 @@ namespace piVC_thu
             }
             symbolTables.Peek().Add(name, localVariable);
 
+            // 这里我们采用和 C/C++ 一样的设定，即在初始化表达式中可以出现正在定义的变量，
+            // 但这个变量在这个初始化表达式中的值是未定义的。
+
             // 如果说有初始化表达式存在，那么其实就相当于一个赋值语句，所以也需要放到现在的 block 里
             if (context.expr() != null)
             {
