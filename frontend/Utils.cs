@@ -55,7 +55,7 @@ namespace piVC_thu
         {
             Expression? expression = Visit(context);
             if (expression == null)
-                throw new ParsingException(context, $"try to use a void expression.");
+                throw new ParsingException(context, $"try to use an expression of type 'void'.");
             if (expression.type != intendedType)
                 throw new ParsingException(context, $"the expected type of the expression is '{intendedType}' while the actual type is '{expression.type}'.");
             return expression;
