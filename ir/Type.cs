@@ -110,20 +110,20 @@ namespace piVC_thu
 
         private static LinkedList<FunType> singletons = new LinkedList<FunType>();
 
-        protected FunType(List<VarType> returnType, List<VarType> paraTypes)
+        private FunType(List<VarType> returnTypes, List<VarType> paraTypes)
         {
-            this.returnTypes = returnType;
+            this.returnTypes = returnTypes;
             this.paraTypes = paraTypes;
         }
 
-        public static FunType Get(List<VarType> returnType, List<VarType> paraTypes)
+        public static FunType Get(List<VarType> returnTypes, List<VarType> paraTypes)
         {
             Func<FunType, bool> Equals = (FunType funType) =>
             {
-                if (returnType.Count != funType.returnTypes.Count)
+                if (returnTypes.Count != funType.returnTypes.Count)
                     return false;
-                for (int i = 0; i < funType.paraTypes.Count; ++i)
-                    if (paraTypes[i] != funType.paraTypes[i])
+                for (int i = 0; i < funType.returnTypes.Count; ++i)
+                    if (returnTypes[i] != funType.returnTypes[i])
                         return false;
 
                 if (paraTypes.Count != funType.paraTypes.Count)
@@ -139,7 +139,7 @@ namespace piVC_thu
                     return funType;
 
             // if there is no equal FunType to be find
-            FunType newFunType = new FunType(returnType, paraTypes);
+            FunType newFunType = new FunType(returnTypes, paraTypes);
             singletons.AddLast(newFunType);
             return newFunType;
         }
@@ -163,19 +163,41 @@ namespace piVC_thu
         }
     }
 
-    sealed class PredType : FunType
+    // 尽管 PredType 和 FunType 似乎有一点类似，
+    // 但我们还是应该将其分开处理。
+    // 毕竟在我们的设计里，谓词只能在 annotation 里调用，
+    // 它不能被视为一个 function，不是嘛？
+    sealed class PredType : Type
     {
-        private PredType(List<VarType> paraTypes) :
-            base(new List<VarType> {
-                BoolType.Get()
-            }, paraTypes)
-        { }
+        public List<VarType> paraTypes;
+
+        private static LinkedList<PredType> singletons = new LinkedList<PredType>();
+
+        private PredType(List<VarType> paraTypes)
+        {
+            this.paraTypes = paraTypes;
+        }
 
         public static PredType Get(List<VarType> paraTypes)
         {
-            return (PredType)(FunType.Get(new List<VarType> {
-                BoolType.Get()
-            }, paraTypes));
+            Func<PredType, bool> Equals = (PredType predType) =>
+            {
+                if (paraTypes.Count != predType.paraTypes.Count)
+                    return false;
+                for (int i = 0; i < predType.paraTypes.Count; ++i)
+                    if (paraTypes[i] != predType.paraTypes[i])
+                        return false;
+
+                return true;
+            };
+            foreach (PredType predType in singletons)
+                if (Equals(predType))
+                    return predType;
+
+            // if there is no equal PredType to be find
+            PredType newPredType = new PredType(paraTypes);
+            singletons.AddLast(newPredType);
+            return newPredType;
         }
 
         public override string ToString()
