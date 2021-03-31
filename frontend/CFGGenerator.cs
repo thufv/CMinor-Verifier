@@ -247,7 +247,7 @@ namespace piVC_thu
                     Block.AddEdge(currentBlock, postconditionBlock);
                 }
                 else
-                    throw new ParsingException(context, $"function {name} does not return in all paths.");
+                    throw new ParsingException(context, $"function '{name}' does not return in all paths.");
             }
 
             // 搞定这个函数啦~

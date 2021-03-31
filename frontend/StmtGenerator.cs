@@ -169,7 +169,10 @@ namespace piVC_thu
             // 访问 body
             currentBlock = bodyBlock;
             Visit(context.stmt());
-            Block.AddEdge(currentBlock, loopheadBlock);
+            if (currentBlock != null)
+            {
+                Block.AddEdge(currentBlock, loopheadBlock);
+            }
 
             // 结束循环
             symbolTables.Pop();
@@ -277,7 +280,10 @@ namespace piVC_thu
             }
             annotated = null;
 
-            Block.AddEdge(currentBlock, loopheadBlock);
+            if (currentBlock != null)
+            {
+                Block.AddEdge(currentBlock, loopheadBlock);
+            }
 
             // 结束循环
             symbolTables.Pop();
