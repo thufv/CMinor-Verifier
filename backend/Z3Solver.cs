@@ -68,7 +68,7 @@ namespace piVC_thu
                                     case BoolType:
                                         return ctx.MkArrayConst(name, ctx.IntSort, ctx.BoolSort);
                                     default:
-                                        throw new ArgumentException("there's an atomic type that is neither int, float or bool. Probably a bug occurs.");
+                                        throw new ArgumentException("there's an atomic type that is neither 'int', 'float' or 'bool'. Probably a bug occurs.");
                                 }
                         }
                         break;
@@ -273,6 +273,18 @@ namespace piVC_thu
                             return ctx.MkRealConst(parameter.name);
                         case BoolType:
                             return ctx.MkBoolConst(parameter.name);
+                        case ArrayType at:
+                            switch (at.atomicType)
+                            {
+                                case IntType:
+                                    return ctx.MkArrayConst(parameter.name, ctx.IntSort, ctx.IntSort);
+                                case FloatType:
+                                    return ctx.MkArrayConst(parameter.name, ctx.IntSort, ctx.RealSort);
+                                case BoolType:
+                                    return ctx.MkArrayConst(parameter.name, ctx.IntSort, ctx.BoolSort);
+                                default:
+                                    throw new ArgumentException("there's an atomic type that is neither 'int', 'float' or 'bool'. Probably a bug occurs.");
+                            }
                         default:
                             throw new ArgumentException($"the type of parameter of {predicate.name} is neither int, float nor bool.");
                     }

@@ -304,11 +304,32 @@ namespace piVC_thu
                 else
                     throw new ParsingException(ctx, $"duplicate predicate parameter '{paraName}'");
 
-                LocalVariable paraVariable = new LocalVariable
+                LocalVariable paraVariable;
+                if (paraTypes[i] is StructType sv)
                 {
-                    type = paraTypes[i],
-                    name = counter.GetVariable(paraName)
-                };
+                    paraVariable = new StructVariable(sv, counter.GetVariable(paraName));
+                }
+                else if (paraTypes[i] is ArrayType av)
+                {
+                    paraVariable = new ArrayVariable
+                    {
+                        type = paraTypes[i],
+                        name = counter.GetVariable(paraName),
+                        length = new LocalVariable
+                        {
+                            type = IntType.Get(),
+                            name = counter.GetLength()
+                        }
+                    };
+                }
+                else
+                {
+                    paraVariable = new LocalVariable
+                    {
+                        type = paraTypes[i],
+                        name = counter.GetVariable(paraName)
+                    };
+                }
                 parameters.Add(paraVariable);
 
                 symbolTables.Peek().Add(paraName, paraVariable);
