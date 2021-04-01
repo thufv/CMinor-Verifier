@@ -116,7 +116,7 @@ namespace piVC_thu
         }
 
         // 从 Counter 里得到的所有数字都是全局唯一的
-        class Counter
+        public class Counter
         {
             // 这个是用来作 alpha renaming 的，每个 function 会清空一次
             // 局部变量作 alpha-renaming 会变成：{name}${number}
@@ -175,7 +175,7 @@ namespace piVC_thu
             // 为数组长度搞一个临时变量：_length${name}
             // 因为我们已知数组的变量名便是全局 unique 的，
             // 所以长度的变量名也是全局 unique 的。
-            public string GetLength(string variable)
+            public static string GetLength(string variable)
             {
                 return "_length" + "$" + variable;
             }

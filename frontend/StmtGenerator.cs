@@ -39,7 +39,7 @@ namespace piVC_thu
                         length = new LocalVariable
                         {
                             type = IntType.Get(),
-                            name = counter.GetLength(varName)
+                            name = Counter.GetLength(varName)
                         }
                     };
                     break;

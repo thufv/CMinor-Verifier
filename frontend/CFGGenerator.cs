@@ -161,7 +161,7 @@ namespace piVC_thu
                         length = new LocalVariable
                         {
                             type = IntType.Get(),
-                            name = counter.GetLength(paraVarName)
+                            name = Counter.GetLength(paraVarName)
                         }
                     };
                 }
@@ -202,7 +202,7 @@ namespace piVC_thu
                             length = new LocalVariable
                             {
                                 type = IntType.Get(),
-                                name = counter.GetLength(rvName)
+                                name = Counter.GetLength(rvName)
                             }
                         });
                     }
@@ -321,7 +321,7 @@ namespace piVC_thu
                         length = new LocalVariable
                         {
                             type = IntType.Get(),
-                            name = counter.GetLength(paraVarName)
+                            name = Counter.GetLength(paraVarName)
                         }
                     };
                 }

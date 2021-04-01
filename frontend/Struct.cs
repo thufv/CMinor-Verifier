@@ -71,11 +71,27 @@ namespace piVC_thu
             this.name = name;
             foreach (MemberVariable mv in type.structDefinition.members.Values)
             {
-                members.Add(mv.name, new LocalVariable
+                if (mv.type is ArrayType)
                 {
-                    type = mv.type,
-                    name = $"{name}${mv.name}"
-                });
+                    members.Add(mv.name, new ArrayVariable
+                    {
+                        type = mv.type,
+                        name = $"{name}${mv.name}",
+                        length = new LocalVariable
+                        {
+                            type = IntType.Get(),
+                            name = CFGGenerator.Counter.GetLength(mv.name)
+                        }
+                    });
+                }
+                else
+                {
+                    members.Add(mv.name, new LocalVariable
+                    {
+                        type = mv.type,
+                        name = $"{name}${mv.name}"
+                    });
+                }
             }
         }
     }
