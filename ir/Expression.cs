@@ -580,14 +580,14 @@ namespace piVC_thu
     {
         public ForallQuantifiedExpression(Dictionary<string, QuantifiedVariable> vars, Expression expression) : base(vars, expression) { }
 
-        protected override string GetQuantifier() => "∀";
+        protected override string GetQuantifier() => "forall";
     }
 
     sealed class ExistsQuantifiedExpression : QuantifiedExpression
     {
         public ExistsQuantifiedExpression(Dictionary<string, QuantifiedVariable> vars, Expression expression) : base(vars, expression) { }
 
-        protected override string GetQuantifier() => "∃";
+        protected override string GetQuantifier() => "exists";
     }
 
     sealed class AndExpression : BinaryExpression
@@ -667,13 +667,18 @@ namespace piVC_thu
 
         public override Expression Substitute(LocalVariable s, Expression t)
         {
+            Expression expression = this.expression.Substitute(s, t);
             if (expression is VariableExpression ve)
             {
                 Debug.Assert(ve.variable is ArrayVariable);
                 if (((ArrayVariable)(ve.variable)).length == s)
+                {
                     return t;
+                }
                 else
-                    return this;
+                {
+                    return new LengthExpression(expression);
+                }
             }
             else
             {
@@ -681,7 +686,7 @@ namespace piVC_thu
                 if (((ArrayUpdateExpression)expression).length.variable == s)
                     return t;
                 else
-                    return this;
+                    return new LengthExpression(expression);
             }
         }
     }

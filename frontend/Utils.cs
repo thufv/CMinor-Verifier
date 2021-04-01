@@ -130,7 +130,7 @@ namespace piVC_thu
             }
 
             // 我们需要为每一个函数调用搞一个临时变量
-            // 这个临时变量的名字是：_call${number}
+            // 这个临时变量的名字是：_call_{variable}${number}
             Dictionary<string, int> callCounter = new Dictionary<string, int>();
             public string GetCall(string variable)
             {
