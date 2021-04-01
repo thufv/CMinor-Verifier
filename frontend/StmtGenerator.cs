@@ -168,6 +168,7 @@ namespace piVC_thu
             });
 
             // 开一个 post loop block，接在 exit loop block 后面
+            BasicBlock? outerPostLoopBlock = postLoopBlock;
             postLoopBlock = new BasicBlock(currentFunction, exitBlock);
 
             // 访问 body
@@ -181,6 +182,7 @@ namespace piVC_thu
             // 结束循环
             symbolTables.Pop();
             currentBlock = postLoopBlock;
+            postLoopBlock = outerPostLoopBlock;
 
             return null;
         }
@@ -227,8 +229,8 @@ namespace piVC_thu
                 }
                 else
                 {
-                    Debug.Assert(context.forIter().assign() != null);
-                    Visit(context.forIter().assign());
+                    Debug.Assert(context.forInit().assign() != null);
+                    Visit(context.forInit().assign());
                 }
             }
 
@@ -261,6 +263,7 @@ namespace piVC_thu
             });
 
             // 开一个 post loop block，接在 exit loop block 后面
+            BasicBlock? outerPostLoopBlock = postLoopBlock;
             postLoopBlock = new BasicBlock(currentFunction, exitBlock);
 
             // 访问 body
@@ -292,6 +295,7 @@ namespace piVC_thu
             // 结束循环
             symbolTables.Pop();
             currentBlock = postLoopBlock;
+            postLoopBlock = outerPostLoopBlock;
 
             return null;
         }

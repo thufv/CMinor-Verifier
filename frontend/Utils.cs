@@ -67,7 +67,7 @@ namespace piVC_thu
             foreach (var symbolTable in symbolTables)
                 if (symbolTable.ContainsKey(name))
                 {
-                    // Console.WriteLine($"Found a variable of name {name} and type {symbolTable[name].type}.");
+                    // Console.WriteLine($"Found variable ({symbolTable[name].name}: {symbolTable[name].type}) of name {name}.");
 
                     return symbolTable[name];
                 }

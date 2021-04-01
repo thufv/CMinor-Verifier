@@ -15,9 +15,9 @@ namespace piVC_thu
         // 否则的话，返回一个 counter model。
         public CounterModel? CheckValid(Expression expression)
         {
-            Console.Write($"CheckValid: ");
-            expression.Print(Console.Out);
-            Console.Write("\n");
+            // Console.Write($"CheckValid: ");
+            // expression.Print(Console.Out);
+            // Console.Write("\n");
 
             Solver solver = ctx.MkSolver();
 
