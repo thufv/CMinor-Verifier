@@ -15,12 +15,16 @@ namespace piVC_thu
         // 否则的话，返回一个 counter model。
         public CounterModel? CheckValid(Expression expression)
         {
+            Console.Write($"CheckValid: ");
+            expression.Print(Console.Out);
+            Console.Write("\n");
+
             Solver solver = ctx.MkSolver();
 
             Expr expr = ExpressionToZ3Expr(expression).Simplify();
             Debug.Assert(expr is BoolExpr);
 
-            Console.WriteLine($"CheckValid: {expr}");
+            Console.WriteLine($"CheckValid(Z3): {expr}");
 
             // Z3 默认求解的是 satisfiable
             // 为了判断 valid，我们需要先取反
@@ -222,20 +226,19 @@ namespace piVC_thu
                         break;
                     }
                 case QuantifiedExpression qe:
-                    Expr[] boundConstants = qe.vars.Keys.Select(
-                        name => ctx.MkIntConst(name)
+                    Expr[] boundConstants = qe.vars.Values.Select(
+                        varaible => ctx.MkIntConst(varaible.name)
                     ).ToArray();
                     Expr body = ExpressionToZ3Expr(qe.expression);
-                    switch (qe)
+                    if (qe is ForallQuantifiedExpression)
                     {
-                        case ForallQuantifiedExpression:
-                            return ctx.MkForall(boundConstants, body);
-                        case ExistsQuantifiedExpression:
-                            return ctx.MkExists(boundConstants, body);
+                        return ctx.MkForall(boundConstants, body);
                     }
-
-                    Debug.Assert(false);
-                    break;
+                    else
+                    {
+                        Debug.Assert(qe is ExistsQuantifiedExpression);
+                        return ctx.MkExists(boundConstants, body);
+                    }
                 case LengthExpression le:
                 {
                     if (le.expression is VariableExpression ve)
