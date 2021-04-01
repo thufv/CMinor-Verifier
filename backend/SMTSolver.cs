@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 
 namespace piVC_thu
@@ -14,6 +15,32 @@ namespace piVC_thu
         // 否则返回Counter一个 counter model
         public CounterModel? CheckValid(Expression expression)
         {
+            // introduce the knowledge that the length of array must be non-negative
+            Expression lengthKnowledge = expression.GetFreeVariables().Aggregate<LocalVariable, Expression>(
+                new BoolConstantExpression(true),
+                (expression, variable) =>
+                {
+                    if (variable is ArrayVariable av)
+                    {
+                        return new AndExpression(
+                            le: expression,
+                            re: new GEExpression(
+                                le: new VariableExpression(av.length),
+                                re: new IntConstantExpression(0)
+                            )
+                        );
+                    }
+                    else
+                    {
+                        return expression;
+                    }
+                });
+            
+            expression = new ImplicationExpression(
+                le: lengthKnowledge,
+                re: expression
+            );
+
             return z3Solver.CheckValid(expression);
         }
 

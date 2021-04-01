@@ -71,7 +71,7 @@ namespace piVC_thu
 
                     return symbolTable[name];
                 }
-            throw new ParsingException(context, $"cannot find local variable {name}.");
+            throw new ParsingException(context, $"cannot find local variable '{name}'.");
         }
         bool LocalVariableExists(string name)
         {

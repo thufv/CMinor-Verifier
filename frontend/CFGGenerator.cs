@@ -234,6 +234,8 @@ namespace piVC_thu
 
             // visit function body
             currentBlock = new BasicBlock(currentFunction, preconditionBlock);
+
+            // 逐次访问函数中的每一条语句
             annotated = false;
             foreach (var stmt in context.stmt())
                 Visit(stmt);
