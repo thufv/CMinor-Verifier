@@ -125,9 +125,9 @@ namespace piVC_thu
             {
                 currentBlock = new BasicBlock(currentFunction);
                 if (visitedThenBlock != null)
-                    Block.AddEdge(thenBlock, currentBlock);
+                    Block.AddEdge(visitedThenBlock, currentBlock);
                 if (visitedElseBlock != null)
-                    Block.AddEdge(elseBlock, currentBlock);
+                    Block.AddEdge(visitedElseBlock, currentBlock);
             }
 
             return null;
@@ -384,7 +384,7 @@ namespace piVC_thu
             if (lv is ArrayVariable av)
             {
                 VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[0], IntType.Get()), counter.GetSub);
-                
+
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
                 {
