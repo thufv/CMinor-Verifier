@@ -50,7 +50,9 @@ namespace piVC_thu
         public override Expression Substitute(LocalVariable s, Expression t)
         {
             if (s == variable)
+            {
                 return t;
+            }
             else
             {
                 Debug.Assert(s.name != variable.name);
