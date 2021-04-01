@@ -33,7 +33,7 @@ namespace piVC_thu
     {
         public Struct structDefinition;
 
-        private static SortedDictionary<Struct, StructType> singletons = new SortedDictionary<Struct, StructType>();
+        private static Dictionary<Struct, StructType> singletons = new Dictionary<Struct, StructType>();
 
         private StructType(Struct structDefinition)
         {
