@@ -147,20 +147,21 @@ namespace piVC_thu
                     throw new ParsingException(ctx, $"duplicate function parameter '{paraName}'");
 
                 LocalVariable paraVariable;
+                string paraVarName = counter.GetVariable(paraName);
                 if (paraTypes[i] is StructType sv)
                 {
-                    paraVariable = new StructVariable(sv, counter.GetVariable(paraName));
+                    paraVariable = new StructVariable(sv, paraVarName);
                 }
                 else if (paraTypes[i] is ArrayType av)
                 {
                     paraVariable = new ArrayVariable
                     {
                         type = paraTypes[i],
-                        name = counter.GetVariable(paraName),
+                        name = paraVarName,
                         length = new LocalVariable
                         {
                             type = IntType.Get(),
-                            name = counter.GetLength()
+                            name = counter.GetLength(paraVarName)
                         }
                     };
                 }
@@ -169,7 +170,7 @@ namespace piVC_thu
                     paraVariable = new LocalVariable
                     {
                         type = paraTypes[i],
-                        name = counter.GetVariable(paraName)
+                        name = paraVarName
                     };
                 }
 
@@ -187,20 +188,21 @@ namespace piVC_thu
 
                 if (returnType is VarType varType)
                 {
+                    string rvName = counter.GetVariable("rv");
                     if (varType is StructType sv)
                     {
-                        rvs.Add(new StructVariable(sv, counter.GetVariable("rv")));
+                        rvs.Add(new StructVariable(sv, rvName));
                     }
                     else if (varType is ArrayType av)
                     {
                         rvs.Add(new ArrayVariable
                         {
                             type = varType,
-                            name = counter.GetVariable("rv"),
+                            name = rvName,
                             length = new LocalVariable
                             {
                                 type = IntType.Get(),
-                                name = counter.GetLength()
+                                name = counter.GetLength(rvName)
                             }
                         });
                     }
@@ -209,7 +211,7 @@ namespace piVC_thu
                         rvs.Add(new LocalVariable
                         {
                             type = varType,
-                            name = counter.GetVariable("rv")
+                            name = rvName
                         });
                     }
                 }
@@ -305,20 +307,21 @@ namespace piVC_thu
                     throw new ParsingException(ctx, $"duplicate predicate parameter '{paraName}'");
 
                 LocalVariable paraVariable;
+                string paraVarName = counter.GetVariable(paraName);
                 if (paraTypes[i] is StructType sv)
                 {
-                    paraVariable = new StructVariable(sv, counter.GetVariable(paraName));
+                    paraVariable = new StructVariable(sv, paraVarName);
                 }
                 else if (paraTypes[i] is ArrayType av)
                 {
                     paraVariable = new ArrayVariable
                     {
                         type = paraTypes[i],
-                        name = counter.GetVariable(paraName),
+                        name = paraVarName,
                         length = new LocalVariable
                         {
                             type = IntType.Get(),
-                            name = counter.GetLength()
+                            name = counter.GetLength(paraVarName)
                         }
                     };
                 }
@@ -327,7 +330,7 @@ namespace piVC_thu
                     paraVariable = new LocalVariable
                     {
                         type = paraTypes[i],
-                        name = counter.GetVariable(paraName)
+                        name = paraVarName
                     };
                 }
                 parameters.Add(paraVariable);

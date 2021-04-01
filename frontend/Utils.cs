@@ -141,14 +141,14 @@ namespace piVC_thu
 
             // 如果一个 condition 不是只有一个变量组成的，
             // 那么我们需要为这个 condition 搞一个临时变量
-            // 这个临时变量的名字是：_condition#{number}
+            // 这个临时变量的名字是：_condition${number}
             int conditionCounter = 0;
             public string GetCondition()
             {
                 return "_condition" + "$" + ++conditionCounter;
             }
 
-            // 我们也需要为每一个新数组搞一个临时变量：_array#{number}
+            // 我们也需要为每一个新数组搞一个临时变量：_array${number}
             // 注意：这个仅用于 new 出来的数组。
             // 有名字的数组，包括局部变量、参数或返回值，还是会被视为变量来处理。
             int newArrayCounter = 0;
@@ -157,14 +157,14 @@ namespace piVC_thu
                 return "_array" + "$" + ++newArrayCounter;
             }
 
-            // 我们其实也需要为每一个参数搞一个临时变量：_arg#{number}
+            // 我们其实也需要为每一个参数搞一个临时变量：_arg${number}
             int newArgNumber = 0;
             public string GetArg()
             {
                 return "_arg" + "$" + ++newArgNumber;
             }
 
-            // 为数组下标搞一个临时变量：_sub#{number}
+            // 为数组下标搞一个临时变量：_sub${number}
             // 这是为了方便 assert 其合法性（runtime assertion）
             int subCounter = 0;
             public string GetSub()
@@ -172,16 +172,15 @@ namespace piVC_thu
                 return "_sub" + "$" + ++subCounter;
             }
 
-            // 为数组长度搞一个临时变量：_length#{number}
-            // 这一方面是为了方便 assert 其非负性
-            // 另一方面也是为了方便 assert 下标的合法性
-            int lengthCounter = 0;
-            public string GetLength()
+            // 为数组长度搞一个临时变量：_length${name}
+            // 因为我们已知数组的变量名便是全局 unique 的，
+            // 所以长度的变量名也是全局 unique 的。
+            public string GetLength(string variable)
             {
-                return "_length" + "$" + ++lengthCounter;
+                return "_length" + "$" + variable;
             }
 
-            // 为除数搞一个临时变量：_divisor#{number}
+            // 为除数搞一个临时变量：_divisor${number}
             // 这是为了方便 assert 其非零性
             // 方便起见，这里我们统一考虑 /, div 和 %
             int divisorCounter = 0;

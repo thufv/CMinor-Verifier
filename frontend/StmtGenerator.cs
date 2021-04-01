@@ -25,20 +25,21 @@ namespace piVC_thu
 
             // 用上面算出来的类型、变量名和初始化表达式构成一个变量整体
             LocalVariable localVariable;
+            string varName = counter.GetVariable(name);
             switch (type)
             {
                 case StructType st:
-                    localVariable = new StructVariable(st, counter.GetVariable(name));
+                    localVariable = new StructVariable(st, varName);
                     break;
                 case ArrayType at:
                     localVariable = new ArrayVariable
                     {
                         type = at,
-                        name = counter.GetVariable(name),
+                        name = varName,
                         length = new LocalVariable
                         {
                             type = IntType.Get(),
-                            name = counter.GetLength()
+                            name = counter.GetLength(varName)
                         }
                     };
                     break;
@@ -46,7 +47,7 @@ namespace piVC_thu
                     localVariable = new LocalVariable
                     {
                         type = type,
-                        name = counter.GetVariable(name)
+                        name = varName
                     };
                     break;
             }
@@ -383,6 +384,7 @@ namespace piVC_thu
             if (lv is ArrayVariable av)
             {
                 VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[0], IntType.Get()), counter.GetSub);
+                
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
                 {
@@ -393,12 +395,11 @@ namespace piVC_thu
                 {
                     currentBlock.AddStatement(new AssertStatement()
                     {
-                        annotation = new LTExpression(subscript, new VariableExpression(av.length))
+                        annotation = new LTExpression(subscript, new LengthExpression(new VariableExpression(av)))
                     });
                 }
 
                 Expression rhs = TypeConfirm(context.expr()[1], ((ArrayType)(av.type)).atomicType);
-                annotated = null;
 
                 currentBlock.AddStatement(new SubscriptAssignStatement
                 {
@@ -406,11 +407,11 @@ namespace piVC_thu
                     subscript = subscript,
                     rhs = rhs
                 });
-
-                return new SubscriptExpression(new VariableExpression(av), subscript);
             }
             else
                 throw new ParsingException(context, "request for an element in a non-array variable.");
+            annotated = null;
+            return null;
         }
 
         public override Expression? VisitMemAssign([NotNull] piParser.MemAssignContext context)
@@ -481,41 +482,6 @@ namespace piVC_thu
                             rhs = new VariableExpression(rs.members[mv.name])
                         });
                     }
-                    break;
-                case ArrayType at:
-                    Console.WriteLine($"{lhsVariable.name}: {lhsVariable.type}");
-                    Debug.Assert(lhsVariable is ArrayVariable);
-
-                    currentBlock.AddStatement(new VariableAssignStatement
-                    {
-                        variable = lhsVariable,
-                        rhs = rhs
-                    });
-
-                    // 右边有两种可能：
-                    // 一种是 variable expression；
-                    // 另一种是 array update expression
-                    if (rhs is VariableExpression ve && ve.variable is ArrayVariable av)
-                    {
-                        Debug.Assert(ve.variable is ArrayVariable);
-                        currentBlock.AddStatement(new VariableAssignStatement
-                        {
-                            variable = ((ArrayVariable)lhsVariable).length,
-                            rhs = new VariableExpression(av.length)
-                        });
-                    }
-                    else if (rhs is ArrayUpdateExpression aue)
-                    {
-                        currentBlock.AddStatement(new VariableAssignStatement
-                        {
-                            variable = ((ArrayVariable)lhsVariable).length,
-                            rhs = aue.length
-                        });
-                    }
-                    else
-                        throw new ArgumentException(
-                            message: "the expression at right hand side has an array type but it is neither single variable expression nor array update expression. Probably a bug occurs.",
-                            paramName: nameof(rhs));
                     break;
                 default:
                     currentBlock.AddStatement(new VariableAssignStatement

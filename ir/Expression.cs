@@ -538,6 +538,7 @@ namespace piVC_thu
 
     abstract class QuantifiedExpression : Expression
     {
+        // notice: the key string is not alpha-renamed
         public Dictionary<string, QuantifiedVariable> vars;
         public Expression expression;
 
@@ -567,7 +568,20 @@ namespace piVC_thu
 
         public override Expression Substitute(LocalVariable s, Expression t)
         {
-            return this;
+            if (vars.ContainsKey(s.name))
+            {
+                return this;
+            }
+            else
+            {
+                // 调用子类的 constructor
+                Object? result = Activator.CreateInstance(this.GetType(), new object[] {
+                    vars, expression.Substitute(s, t)
+                });
+                Debug.Assert(result != null);
+                Debug.Assert(result is Expression);
+                return (Expression)result;
+            }
         }
 
         public override HashSet<LocalVariable> GetFreeVariables()
