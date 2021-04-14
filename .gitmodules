@@ -1,0 +1,3 @@
+[submodule "testcases"]
+	path = testcases
+	url = git@git.tsinghua.edu.cn:xiexy17/pitc-thu.git
