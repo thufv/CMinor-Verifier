@@ -97,24 +97,24 @@ namespace piVC_thu
                 Verifier verifier = new Verifier(Console.Out);
                 if (verifier.Apply(cfg))
                 {
-                    Console.WriteLine("All specifications hold.");
+                    Console.WriteLine("VERIFIED");
                     Environment.Exit(0);
                 }
                 else
                 {
-                    Console.WriteLine("There exists a specification that does not hold.");
-                    Environment.Exit(1);
+                    Console.WriteLine("UNVERIFIED");
+                    Environment.Exit(0);
                 }
             }
             catch (ParsingException e)
             {
                 Console.Error.WriteLine($"semantic error: {e.Message}");
-                Environment.Exit(2);
+                Environment.Exit(1);
             }
             catch (ParseCanceledException e)
             {
                 Console.Error.WriteLine($"syntax error: {e.Message}");
-                Environment.Exit(3);
+                Environment.Exit(1);
             }
         }
     }
