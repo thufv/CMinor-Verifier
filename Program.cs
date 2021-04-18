@@ -95,16 +95,11 @@ namespace piVC_thu
                 }
 
                 Verifier verifier = new Verifier(Console.Out);
-                if (verifier.Apply(cfg))
-                {
-                    Console.WriteLine("VERIFIED");
-                    Environment.Exit(0);
-                }
-                else
-                {
-                    Console.WriteLine("UNVERIFIED");
-                    Environment.Exit(0);
-                }
+                int result = verifier.Apply(cfg);
+                if (result > 0) Console.WriteLine("VERIFIED");
+                else if (result == 0) Console.WriteLine("UNKNOWN");
+                else if (result < 0) Console.WriteLine("UNVERIFIED");
+                Environment.Exit(0);
             }
             catch (ParsingException e)
             {
