@@ -15,16 +15,10 @@ namespace piVC_thu
         // 否则的话，返回一个 counter model。
         public CounterModel? CheckValid(Expression expression)
         {
-            // Console.Write($"CheckValid: ");
-            // expression.Print(Console.Out);
-            // Console.Write("\n");
-
             Solver solver = ctx.MkSolver();
 
             Expr expr = ExpressionToZ3Expr(expression).Simplify();
             Debug.Assert(expr is BoolExpr);
-
-            Console.WriteLine($"CheckValid(Z3): {expr}");
 
             // Z3 默认求解的是 satisfiable
             // 为了判断 valid，我们需要先取反
@@ -39,7 +33,7 @@ namespace piVC_thu
                 Dictionary<string, string> assignments = new Dictionary<string, string>();
                 foreach ((FuncDecl decl, Expr valueExpr) in solver.Model.Consts)
                 {
-                     assignments.Add(decl.Name.ToString(), valueExpr.ToString());
+                    assignments.Add(decl.Name.ToString(), valueExpr.ToString());
                 }
                 return new CounterModel(assignments);
             }
@@ -240,21 +234,21 @@ namespace piVC_thu
                         return ctx.MkExists(boundConstants, body);
                     }
                 case LengthExpression le:
-                {
-                    if (le.expression is VariableExpression ve)
                     {
-                        Debug.Assert(ve.variable is ArrayVariable);
-                        ArrayVariable av = (ArrayVariable)(ve.variable);
-                        return ctx.MkIntConst(av.length.name);
+                        if (le.expression is VariableExpression ve)
+                        {
+                            Debug.Assert(ve.variable is ArrayVariable);
+                            ArrayVariable av = (ArrayVariable)(ve.variable);
+                            return ctx.MkIntConst(av.length.name);
+                        }
+                        else
+                        {
+                            Debug.Assert(le.expression is ArrayUpdateExpression);
+                            LocalVariable variable = ((ArrayUpdateExpression)(le.expression)).length.variable;
+                            Debug.Assert(variable.type is IntType);
+                            return ctx.MkIntConst(variable.name);
+                        }
                     }
-                    else
-                    {
-                        Debug.Assert(le.expression is ArrayUpdateExpression);
-                        LocalVariable variable = ((ArrayUpdateExpression)(le.expression)).length.variable;
-                        Debug.Assert(variable.type is IntType);
-                        return ctx.MkIntConst(variable.name);
-                    }
-                }
             }
             Debug.Assert(false);
             return null;
