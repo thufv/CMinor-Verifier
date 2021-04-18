@@ -367,3 +367,5 @@ FodyWeavers.xsd
 
 # project settings for VS Code
 .vscode/
+
+Properties/
