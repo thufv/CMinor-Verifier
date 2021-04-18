@@ -57,37 +57,22 @@ The details about options are:
 --version     Display version information.
 ```
 
-## To-Do
+## 分值分配
 
-A lot of work needs to do, include the followings and something other.
+占总评 30 分
 
-### Level I: You have to do
+分值分配
+- 报告：6
+- 基本要求一（partial correctness）：21
+- 基本要求二（termination）：3
 
-- [x] The grammar is not totally correct and sufficiently tested.
-- [x] The design and implementation of CFG.
-  - [x] runtime assertion
-    - [x] divided by 0：`/` `div`
-    - [x] the length of array > 0: 
-- [x] The framework of verification algorithm and a baseline implementation.
-  - [x] SMT solver abstraction
-  - [x] substitution
-  - [x] runtime assertion in annotation
-- [ ] printer
-  - [x] control flow graph
-  - [x] basic path
-  - [x] counter model
-  - [ ] label of annotation
-- [ ] The documentation for code, task and environments.
-- [ ] The testcases and judging system.
+bonus 有 0~5 分的加分，推荐 BMC 和谓词抽象，也可以自主选题，需要与助教交流。
 
-### Level II: Make things better
+如果被检查出雷同，则直接以 0 分处理。
 
-- [ ] more beautiful printer
-  - [ ] label of annotation: now I just omit it for simplicity
-  - [ ] the row and column of the beginning of each block
-- [ ] Target code (assembly) generator
-- [x] Find a student to test
+考虑：完成基本要求就有接近 27 分，只要再写完 termination 就只会被扣 1.5 分，再写个 BMC 就有满分，再写个谓词抽象就能加 6 分，我觉得还算是比较宽松也比较合情的
 
-### Level III: Bonus for fun
+有隐藏测例，分数上的占比 20%。
 
-- [ ] VS Code syntax highlighter
+隐藏测例是公开测例的“变体”。
+TODO：具体是怎样的变体需要讲清楚。
