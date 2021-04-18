@@ -9,7 +9,13 @@ namespace piVC_thu
 {
     class Z3Solver
     {
-        Context ctx = new Context(new Dictionary<string, string>() { { "model", "true" } });
+        Context ctx = new Context(new Dictionary<string, string>() {
+            { "model", "true" }
+        });
+
+        public Z3Solver() {
+            Microsoft.Z3.Global.SetParameter("parallel.enable", "false");
+        }
 
         // 如果是 valid，那么就返回 null；
         // 否则的话，返回一个 counter model。
