@@ -1,51 +1,40 @@
-This is the THU version compiler of [piVC](https://cs.stanford.edu/people/jasonaue/pivc/), an education purposed verification language.
+这是清华版的 piVC，受 Stanford 的[同名项目](https://cs.stanford.edu/people/jasonaue/pivc/)启发所作，是一个以教学为目的的验证语言。
 
-## Structure
+## 结构
 
-The whole project are split into three parts:
+该编译器的设计可以分为三个部分：
 
- * frontend: CFG generation from concrete syntax tree, which is calculated by ANTLR
- * CFG: a verification-aimed designed CFG
- * backend: deductive verification of generated CFG, which will call SMT solver to check the validity of verification conditions.
+ * 前端（frontend）：使用由 [ANTLR](https://www.antlr.org/) 自动生成的 parser 将源文件解析为 CST (concrete syntax tree，具体语法树)，再遍历 CST，生成 CFG；
+ * CFG（control flow graph，控制流图）：一个以验证为目标设计的控制流图，作为中间表示；
+ * 后端（backend）：使用 deductive verification 的方法从 CFG 中生成验证条件（verification condition），再将其喂给 SMT Solver 来求解。
 
-You are allowed to modify ONLY ONE file `Verifier.cs`, in which you need to implement the main algorithm of deductive verification.
+你唯一被允许修改、并且你也必须要修改的文件是 `Verifier.cs`，你需要在其中实现 deductive verification 的算法主体。
 
-## Install
+## 安装
 
-You need to install .net 5.0. [Download Link](https://dotnet.microsoft.com/download/dotnet/5.0)
+本项目依赖于 .NET 5.0，你可以从[这里](https://dotnet.microsoft.com/download)下载其最新的 SDK。
 
-Then install C# Plugin in Visual Studio Code, and open this folder using VSCode.
+你可以使用任意你喜欢的 IDE，我们推荐：
+- [Visual Studio](https://visualstudio.microsoft.com/zh-hans/)
+- [Visual Studio Code](https://code.visualstudio.com/)：配合 [C# 插件](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)。
 
-Mac OS Notes:
-1. DO NOT install `dotnet` via Homebrew directly, since the homebrew formula contains an outdated version. use the package installer provided by Microsoft.
-2. You need to install `libz3`. Install homebrew and then run:
-```bash
-brew install z3
-```
+> 注意：建议不要通过 homebrew 或 apt 直接安装，因为其软件源中的 `dotnet` 的版本很有可能是过时的。建议从[这里](https://dotnet.microsoft.com/download)下载最新版。
 
-To check for you environment, run
+## 使用
 
-```bash
-dotnet run
-```
-
-in the project folder.
-
-## Usage
-
-The basic usage is
+本项目基本的使用方法是：
 
 ```bash
-piVC-thu --source <path> --printCFG console
+piVC-thu --source <path>
 ```
 
-You could run the following command in the root directory of this project:
+你可以在本项目的根目录下运行以下指令：
 
 ```bash
-dotnet run -- --source <path> --printCFG console
+dotnet run -- --source <path>
 ```
 
-The details about options are:
+你可以使用 `--printCFG` 来打印出得到的 CFG，各选项的具体含义为：
 
 ```bash
 --source      Required. The source file of pi language (recommended with filename extension '.pi').
