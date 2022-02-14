@@ -8,7 +8,7 @@ main: def* EOF;
 def: funcDef | structDef;
 
 funcDef:
-	(type | 'void') IDENT '(' (var (',' var)*)? ')' '{' (decl | stmt)* '}';
+	funcContract (type | 'void') IDENT '(' (para (',' para)*)? ')' '{' (decl | stmt)* '}';
 
 structDef: 'struct' IDENT '{' (var ';')* '}' ';';
 
@@ -17,6 +17,11 @@ var:
 	atomicType IDENT 						# atomicVar
 	| IDENT IDENT 							# structVar
 	| atomicType IDENT '[' INT_CONSTANT ']' # arrayVar;
+
+para:
+	atomicType IDENT 			# atomicPara
+	| IDENT IDENT 			   	# structPara
+	| atomicType IDENT '[' ']' 	# arrayPara;
 
 /* type */
 type: atomicType | IDENT;
@@ -29,12 +34,17 @@ stmt:
 	| expr ';'															# ExprStmt
 	| assign ';'														# AssignStmt
 	| 'if' '(' expr ')' stmt ('else' stmt)?								# IfStmt
-	| 'while' '(' expr ')' stmt											# WhileStmt
-	| 'for' '(' forInit? ';' expr? ';' forIter? ')' stmt				# ForStmt
+	| loopAnnot iter													# IterStmt
 	| 'break' ';'														# BreakStmt
 	| 'continue' ';'													# ContStmt
 	| 'return' expr? ';'												# ReturnStmt
+	| assertion															# assertStmt
 	| '{' (stmt | decl)* '}'											# StmtBlock;
+
+iter:
+	'while' '(' expr ')' stmt											# WhileStmt
+	| 'do' stmt 'while' '(' expr ')'									# DoStmt
+	| 'for' '(' forInit? ';' expr? ';' forIter? ')' stmt				# ForStmt;
 
 forInit: var ('=' expr)? | assign;
 
@@ -63,53 +73,76 @@ expr:
 	| expr '&&' expr									# AndExpr
 	| expr '||' expr									# OrExpr;
 
-// logicExpr:
-// 	expr														# normalLogicExpr
-// 	| '\\length' '(' logicExpr ')'								# LengthExpr
-// 	| '{' logicExpr '\\with' '[' IDENT ']' '=' logicExpr '}'	# arrayUpdExpr
-// 	| expr ('<->' | '->') expr							 		# ArrowExpr
-// 	| ('\\forall' | '\\exists') IDENT (',' IDENT)* '.' expr	 	# QuantifiedExpr;
-
 /* annotation */
-// annotationWithLabel: '@' (IDENT ':')? expr;
+logicConstant: INT_CONSTANT | FLOAT_CONSTANT | '\\true' | '\\false';
 
-// annotationPre: '@pre' expr;
+term:
+	IDENT														# IdentTerm
+	| '\\result'												# ResTerm
+	| logicConstant												# ConstTerm
+	| IDENT '(' (term (',' term)*)? ')'							# CallTerm
+	| '\\length' '(' term ')'									# LengthTerm
+	| '\\old' '(' term ')'										# OldTerm
+	| '(' term ')'												# ParTerm
+	| '{' term '\\with' '[' IDENT ']' '=' term '}'				# arrayUpdTerm
+	| term '[' term ']'											# SubTerm
+	| term '.' IDENT											# MemTerm
+	| ('!' | '-') term											# UnaryTerm
+	| term ('*' | '/' | '%') term								# MulTerm
+	| term ('+' | '-') term										# AddTerm
+	| term ('<' | '<=' | '>' | '>=') term						# InequTerm
+	| term ('==' | '!=') term									# EquTerm
+	| term '&&' term											# AndTerm
+	| term '||' term											# OrTerm;
 
-// annotationPost: '@post' expr;
+pred:
+	'\\true'													# TruePred
+	| '\\false'													# FalsePred
+	| term (('<' | '<=' | '>' | '>=' | '==' | '!=') term)+		# CmpPred
+	| IDENT '(' term (',' term)* ')' 							# AppPred
+	| '\\old' '(' pred ')' 										# OldPred
+	| '(' pred ')' 												# ParPred
+	| pred '&&' pred 											# ConPred
+	| pred '||' pred											# DisPred
+	| pred '==>' pred											# ImpPred
+	| pred '<==>' pred											# EquPred
+	| '!' pred													# NegPred
+	| pred '^^' pred											# XorPred
+	| ('\\forall' | '\\exists') binder (',' binder)* ';' pred 	# QuantiPred;
 
-// beforeFunc:
-// 	termination annotationPre annotationPost
-// 	| annotationPre annotationPost
-// 	| annotationPre termination annotationPost
-// 	| annotationPre annotationPost termination
-// 	| termination annotationPost annotationPre
-// 	| annotationPost annotationPre
-// 	| annotationPost termination annotationPre
-// 	| annotationPost annotationPre termination;
+binder: ('boolean' | 'integer' | 'real') IDENT;
 
-// beforeBranch:
-// 	termination annotationWithLabel
-// 	| annotationWithLabel termination
-// 	| annotationWithLabel;
+funcContract:
+	'/*@' requiresClause* decreasesClause? ensuresClause* '*/'
+	// | '//@' requiresClause* decreasesClause? ensuresClause*
+	;
 
-// termination: '#' '(' expr (',' expr)* ')';
+requiresClause: 'requires' pred ';';
+
+decreasesClause: 'decreases' term ';';
+
+ensuresClause: 'ensures' pred ';';
+
+assertion:
+	'/*@' 'assert' pred ';' '*/'
+	// | '//@' 'assert' pred ';'
+	;
+
+loopAnnot:
+	'/*@' ('loop' 'invariant' pred ';')* ('loop' 'variant' term ';')? '*/'
+	// | '//@' ('loop' 'invariant' pred ';')* ('loop' 'variant' term ';')?
+	;
 
 /* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';
-
-/* spec */
-// spec:
-
-/* pred */
-// predDef:
-// 	'predicate' IDENT '(' (var (',' var)*)? ')' ':=' expr ';';
 
 /* lexer */
 INT_CONSTANT: [0-9]+;
 FLOAT_CONSTANT: [0-9]+ '.' [0-9]+;
 IDENT: [a-zA-Z] [a-zA-Z0-9_]*;
 
-COMMENT: '/*' .*? '*/' -> skip;
+COMMENT: '/*' ~('@') .*? '*/' -> skip;
 LINE_COMMENT: '//' ~[\r\n]* -> skip;
+// LINE_COMMENT: '//' ~('@') ~[\r\n]* -> skip;
 
 WS: [ \t\r\n\u000C] -> skip;
