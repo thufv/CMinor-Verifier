@@ -2,6 +2,8 @@ grammar cminor;
 
 // @header {#pragma warning disable 3021}
 
+// TODO: logic function
+
 /* top level */
 main: def* EOF;
 
@@ -10,7 +12,7 @@ def: funcDef | structDef | predDef;
 funcDef:
 	funcContract (type | 'void') IDENT '(' (para (',' para)*)? ')' '{' (decl | stmt)* '}';
 
-structDef: 'struct' IDENT '{' (var ';')* '}' ';';
+structDef: 'struct' IDENT '{' (atomicType IDENT ';')* '}' ';';
 
 /* variable */
 var:
@@ -84,7 +86,7 @@ term:
 	| '\\length' '(' term ')'									# LengthTerm
 	| '\\old' '(' term ')'										# OldTerm
 	| '(' term ')'												# ParTerm
-	| '{' term '\\with' '[' IDENT ']' '=' term '}'				# arrayUpdTerm
+	| '{' term '\\with' '[' term ']' '=' term '}'				# arrayUpdTerm
 	| term '[' term ']'											# SubTerm
 	| term '.' IDENT											# MemTerm
 	| ('!' | '-') term											# UnaryTerm
@@ -99,7 +101,7 @@ pred:
 	'\\true'													# TruePred
 	| '\\false'													# FalsePred
 	| term (('<' | '<=' | '>' | '>=' | '==' | '!=') term)+		# CmpPred
-	| IDENT '(' term (',' term)* ')' 							# AppPred
+	| IDENT ('(' term (',' term)* ')')? 						# AppPred
 	| '\\old' '(' pred ')' 										# OldPred
 	| '(' pred ')' 												# ParPred
 	| pred '&&' pred 											# ConPred
@@ -114,7 +116,7 @@ binder: ('boolean' | 'integer' | 'real') IDENT;
 
 funcContract:
 	'/*@' requiresClause* decreasesClause? ensuresClause* '*/'
-	// | '//@' requiresClause* decreasesClause? ensuresClause*
+	// | '//@' requiresClause* decreasesClause? ensuresClause* // TODO
 	;
 
 requiresClause: 'requires' pred ';';
