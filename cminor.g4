@@ -5,7 +5,7 @@ grammar cminor;
 /* top level */
 main: def* EOF;
 
-def: funcDef | structDef;
+def: funcDef | structDef | predDef;
 
 funcDef:
 	funcContract (type | 'void') IDENT '(' (para (',' para)*)? ')' '{' (decl | stmt)* '}';
@@ -130,6 +130,11 @@ assertion:
 
 loopAnnot:
 	'/*@' ('loop' 'invariant' pred ';')* ('loop' 'variant' term ';')? '*/'
+	// | '//@' ('loop' 'invariant' pred ';')* ('loop' 'variant' term ';')?
+	;
+
+predDef:
+	'/*@' 'predicate' IDENT (para (',' para)*)? '=' pred ';' '*/'
 	// | '//@' ('loop' 'invariant' pred ';')* ('loop' 'variant' term ';')?
 	;
 
