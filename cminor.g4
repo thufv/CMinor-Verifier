@@ -134,7 +134,7 @@ loopAnnot:
 	;
 
 predDef:
-	'/*@' 'predicate' IDENT (para (',' para)*)? '=' pred ';' '*/'
+	'/*@' 'predicate' IDENT ('(' para (',' para)* ')')? '=' pred ';' '*/'
 	// | '//@' ('loop' 'invariant' pred ';')* ('loop' 'variant' term ';')?
 	;
 
