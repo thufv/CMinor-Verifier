@@ -1,0 +1,39 @@
+image: pivcci
+cache:
+  key: "$CI_COMMIT_SHA"
+  paths:
+    - bin/
+    - testcases/
+
+stages:
+  - build
+  - prepare_data
+  - test
+
+build:
+  stage: build
+  script:
+    - if [ -d 'bin' ]; then rm -r bin; fi
+    - echo "Build starts..."
+    - dotnet build -c Release
+    - echo "Build finished."
+
+
+prepare_data:
+  stage: prepare_data
+  script:
+    - echo "Test starts..."
+    - echo "Getting the latest test cases..."
+    - if [ -d 'testcases' ]; then rm -r testcases; fi
+    - git clone https://pivcci:nNwMMn8d6ozV_xy6RszB@git.tsinghua.edu.cn/software-verification-21/pitc-thu.git
+    - mv pitc-thu testcases
+    - ls testcases
+    - echo "Latest test cases got."
+
+test:
+  stage: test
+  script:
+    - echo "Running the tests..."
+    - ls testcases
+    - python3.8 testcases/test.py
+    - echo "Test finished."
