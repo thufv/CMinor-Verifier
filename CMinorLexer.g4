@@ -1,7 +1,21 @@
+/*
+ * This lexer grammar only targets C#.
+ */
+
 lexer grammar CMinorLexer;
 
 @header {#pragma warning disable 3021}
 
+@preinclude {
+    using Antlr4.Runtime;
+}
+
+@members {
+  bool inAnnot = false;
+  bool inLineAnnot = false;
+}
+
+/* --- literals --- */
 VOID: 'void';
 STRUCT: 'struct';
 
@@ -70,21 +84,28 @@ INVARIANT: 'invariant';
 VARIANT: 'variant';
 PREDICATE: 'predicate';
 
+/* --- constants --- */
 INT_CONSTANT: [0-9]+;
 FLOAT_CONSTANT: [0-9]+ '.' [0-9]+;
 IDENT: [a-zA-Z] [a-zA-Z0-9_]*;
 
-COMMENT: '/*' ~('@') .*? '*/' -> skip; // TODO: 这里也要改改，万一第一个字符就是 * 怎么办呢qwq
-LINE_COMMENT: '//' ~('@') ~[\r\n]* -> skip;
+/* --- comments --- */
+COMMENT: '/*' ('*/' | ~('@') .*? '*/') -> skip;
+LINE_COMMENT: '//' ([\r\n] | ~('@') ~[\r\n]*) -> skip;
 
-ANNOT_START: '/*@';
-ANNOT_END: '*/';
-LINE_ANNOT_START: '//@';
+/* --- annotationss --- */
+ANNOT_START: '/*@' { inAnnot = true; };
+ANNOT_END: '*/' { inAnnot = false; };
+LINE_ANNOT_START: '//@' { inLineAnnot = true; };
 
-// 不在 line annotation 里时，我们
-WS: [ \t\u000C\r\n] -> skip; // if 
+/* --- '@' is skipped in annotation --- */
+AT: '@' { if (inAnnot || inLineAnnot) Skip(); };
 
-// mode IN_ANNOT;
+/* --- LINEEND cannot be skipped for line annotation --- */
+LINEEND: [\r\n] {
+    if (inLineAnnot) inLineAnnot = false;
+    else Skip();
+};
 
-// 在 line annotation 里时，我们就不能 skip '\r' 和 '\n' 了
-// WS: [ \t\u000C] -> popMode;
+/* --- skip white spaces --- */
+WS: [ \t\u000C] -> skip;
