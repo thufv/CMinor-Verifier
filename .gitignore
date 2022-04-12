@@ -1,0 +1,7 @@
+# ANTLR
+*.antlr/
+
+# target
+obj/
+bin/
+*.out

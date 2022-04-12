@@ -1,6 +1,8 @@
-grammar cminor;
+parser grammar CMinorParser;
 
-// @header {#pragma warning disable 3021}
+options { tokenVocab=CMinorLexer; }
+
+@header {#pragma warning disable 3021}
 
 // TODO: logic function
 
@@ -142,14 +144,3 @@ predDef:
 
 /* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';
-
-/* lexer */
-INT_CONSTANT: [0-9]+;
-FLOAT_CONSTANT: [0-9]+ '.' [0-9]+;
-IDENT: [a-zA-Z] [a-zA-Z0-9_]*;
-
-COMMENT: '/*' ~('@') .*? '*/' -> skip;
-LINE_COMMENT: '//' ~[\r\n]* -> skip;
-// LINE_COMMENT: '//' ~('@') ~[\r\n]* -> skip;
-
-WS: [ \t\r\n\u000C] -> skip;

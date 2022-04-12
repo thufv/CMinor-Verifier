@@ -1,4 +1,4 @@
-//@ predicate p = \true;
+/*@ predicate p (int x) = x + 1 > 0; */
 
 /*@ requires \true;
     ensures \result == a + b; */
