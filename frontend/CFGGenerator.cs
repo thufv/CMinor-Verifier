@@ -1,6 +1,6 @@
-using System.Collections.Generic;
-
+using System.Linq;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
@@ -11,9 +11,9 @@ namespace cminor
     // 整个 frontend 其实都是 CFGGenerator 这一个 class，
     // 由于 class 里的实现代码太大，为了方便组织，利用 C# 的 partial class 我们将其划分成了几个文件。
     //
-    // 我们的语言设计有一个绝妙的地方在于：它是没有 side effect 的。
+    // 目前我们考虑的语言是没有 side effect 的。
     // 这样的话，不少 C/C++ 里的 UB 在我们这里是不存在的，比如 `a[++i] = ++i;` 这种。
-    partial class CFGGenerator : CMinorBaseVisitor<Expression?>
+    partial class CFGGenerator : CMinorParserBaseVisitor<Expression?>
     {
         // 最终计算出来的 IR 主体
         IRMain main = default!;
@@ -22,8 +22,10 @@ namespace cminor
         Function? currentFunction;
         // block
         Block? currentBlock = null;
-        // post block of loop (for break statement)
-        BasicBlock? postLoopBlock = null;
+        // block that break statement points to
+        BasicBlock? breakBlock = null;
+        // block that continue statement points to
+        Block? contBlock = null;
 
         // 符号表
         Dictionary<string, Function> functionTable = new Dictionary<string, Function>();
@@ -34,14 +36,25 @@ namespace cminor
         // 用来作 alpha renaming，以及用来生成临时变量
         Counter counter = new Counter();
 
-        // 主要是用来帮助表达式知道自己现在是否在一个 annotation 里
-        bool? annotated = null;
-
         // 真正的主函数
         public IRMain Apply([NotNull] CMinorParser.MainContext context)
         {
             main = new IRMain();
             Visit(context);
+
+            // 这里我们做一个检查（约定）：ranking function 要么在每个函数头和循环头都有，要么都没有。
+            int rankingFunctionExists = -1; // -1 means unkown, 0 means non-existence, 1 means existence
+            foreach (Function function in functionTable.Values)
+            {
+                if (rankingFunctionExists == -1)
+                    rankingFunctionExists = function.preconditionBlock.rankingFunction != null ? 1 : 0;
+                if (rankingFunctionExists != (function.preconditionBlock.rankingFunction != null ? 1 : 0))
+                    throw new ParsingException(context, "Ranking functions should exist in all function contracts and loopheads, or not exist in all function contracts and loopheads.");
+                foreach (Block block in function.blocks)
+                    if (block is LoopHeadBlock lhb)
+                        if (rankingFunctionExists != (function.preconditionBlock.rankingFunction != null ? 1 : 0))
+                            throw new ParsingException(context, "Ranking functions should exist in all function contracts and loopheads, or not exist in all function contracts and loopheads.");
+            }
 
             // 把函数和谓词的参数、返回值和类型“拍扁”
             // 也就是说把 struct 消解成几个普通的变量
@@ -125,108 +138,30 @@ namespace cminor
 
         public override Expression? VisitFuncDef([NotNull] CMinorParser.FuncDefContext context)
         {
-            string name = CalcDefName(context, context.IDENT());
+            string name = CalcDefName(context, context.retVar().IDENT().Last());
 
+            // 把所有的形参加到符号表里
             symbolTables.Push(new Dictionary<string, LocalVariable>());
+            var paraVars = new List<LocalVariable>(context.paraVar().Select(ctx => CalcParaVar(ctx)));
+            var paraTypes = new List<VarType>(paraVars.Select(var => var.type));
 
-            // 把所有的参数加到符号表里
-            int paraNum = context.var().Length;
-            List<VarType> paraTypes = new List<VarType>();
-            List<LocalVariable> parameters = new List<LocalVariable>();
-            HashSet<string> paraNames = new HashSet<string>();
-            for (int i = 0; i < paraNum; ++i)
-            {
-                var ctx = context.var()[i];
-                paraTypes.Add(CalcType(ctx.type()));
-                string paraName = ctx.IDENT().GetText();
-                if (paraName == "rv")
-                    throw new ParsingException(ctx, "'rv' is not permitted as parameter name, as it's used to indicate the return value in postcondition.");
-                if (!paraNames.Contains(paraName))
-                    paraNames.Add(paraName);
-                else
-                    throw new ParsingException(ctx, $"duplicate function parameter '{paraName}'");
-
-                LocalVariable paraVariable;
-                string paraVarName = counter.GetVariable(paraName);
-                if (paraTypes[i] is StructType sv)
-                {
-                    paraVariable = new StructVariable(sv, paraVarName);
-                }
-                else if (paraTypes[i] is ArrayType av)
-                {
-                    paraVariable = new ArrayVariable
-                    {
-                        type = paraTypes[i],
-                        name = paraVarName,
-                        length = new LocalVariable
-                        {
-                            type = IntType.Get(),
-                            name = Counter.GetLength(paraVarName)
-                        }
-                    };
-                }
-                else
-                {
-                    paraVariable = new LocalVariable
-                    {
-                        type = paraTypes[i],
-                        name = paraVarName
-                    };
-                }
-
-                parameters.Add(paraVariable);
-                symbolTables.Peek().Add(paraName, paraVariable);
-            }
-
-            // 算出 returnType，如果其不是 void，那么就搞出一个 rv 来
+            // 算出 returnType，如果其不是 void，那么就搞出一个 \result 变量来
             List<VarType> returnTypes = new List<VarType>();
             List<LocalVariable> rvs = new List<LocalVariable>();
-            if (context.type() != null)
+            if (context.retVar().GetChild(0).GetText() != "void")
             {
-                VarType returnType = CalcType(context.type());
-                returnTypes.Add(returnType);
-
-                if (returnType is VarType varType)
-                {
-                    string rvName = counter.GetVariable("rv");
-                    if (varType is StructType sv)
-                    {
-                        rvs.Add(new StructVariable(sv, rvName));
-                    }
-                    else if (varType is ArrayType av)
-                    {
-                        rvs.Add(new ArrayVariable
-                        {
-                            type = varType,
-                            name = rvName,
-                            length = new LocalVariable
-                            {
-                                type = IntType.Get(),
-                                name = Counter.GetLength(rvName)
-                            }
-                        });
-                    }
-                    else
-                    {
-                        rvs.Add(new LocalVariable
-                        {
-                            type = varType,
-                            name = rvName
-                        });
-                    }
-                }
+                LocalVariable rv = CalcRetVar(context.retVar());
+                returnTypes.Add(rv.type);
             }
 
-            annotated = true;
-            PreconditionBlock preconditionBlock = CalcPreconditionBlock(context.beforeFunc().annotationPre(), context.beforeFunc().termination());
-            PostconditionBlock postconditionBlock = CalcPostconditionBlock(context.beforeFunc().annotationPost(), rvs);
-            annotated = null;
+            PreconditionBlock preconditionBlock = CalcPreconditionBlock(context.funcContract().requiresClause(), context.funcContract().decreasesClause());
+            PostconditionBlock postconditionBlock = CalcPostconditionBlock(context.funcContract().ensuresClause(), rvs);
 
             currentFunction = new Function
             {
                 type = FunType.Get(returnTypes, paraTypes),
                 name = name,
-                parameters = parameters,
+                parameters = paraVars,
                 preconditionBlock = preconditionBlock,
                 postconditionBlock = postconditionBlock,
                 rvs = rvs
@@ -238,10 +173,11 @@ namespace cminor
             currentBlock = new BasicBlock(currentFunction, preconditionBlock);
 
             // 逐次访问函数中的每一条语句
-            annotated = false;
-            foreach (var stmt in context.stmt())
-                Visit(stmt);
-            annotated = null;
+            foreach (var child in context.children)
+                if (child is CMinorParser.DeclContext decl)
+                    Visit(decl);
+                else if (child is CMinorParser.StmtContext stmt)
+                    Visit(stmt);
 
             // 理想情况下，currentBasicBlock 应该是空，这表示所有的 path 都已经被 return 了
             if (currentBlock != null)
@@ -256,6 +192,7 @@ namespace cminor
 
             // 搞定这个函数啦~
             symbolTables.Pop();
+
             currentFunction = null;
 
             return null;
@@ -263,22 +200,22 @@ namespace cminor
 
         public override Expression? VisitStructDef([NotNull] CMinorParser.StructDefContext context)
         {
-            string name = CalcDefName(context, context.IDENT());
+            string name = CalcDefName(context, context.IDENT().First());
 
             // parse member variables
             var members = new SortedDictionary<string, MemberVariable>();
-            foreach (var member in context.var())
+            for (int i = 0; i < context.atomicType().Length; ++i)
             {
-                string memberName = member.IDENT().GetText();
+                string memberName = context.IDENT()[i + 1].GetText();
                 MemberVariable memberVariable = new MemberVariable
                 {
-                    type = CalcType(member.type()),
+                    type = AtomicType.FromString(context.atomicType()[i].GetText()),
                     name = memberName
                 };
-                if (!members.ContainsKey(name))
+                if (!members.ContainsKey(memberName))
                     members.Add(memberName, memberVariable);
                 else
-                    throw new ParsingException(member, $"duplicate struct member '{memberName}'");
+                    throw new ParsingException(context, $"duplicate struct member '{memberName}'");
             }
             Struct s = new Struct(name, members);
             structTable.Add(name, s);
@@ -289,58 +226,12 @@ namespace cminor
         {
             string name = CalcDefName(context, context.IDENT());
 
-            symbolTables.Push(new Dictionary<string, LocalVariable>());
-
             // calculate parameters
-            int paraNum = context.var().Length;
-            List<LocalVariable> parameters = new List<LocalVariable>();
-            List<VarType> paraTypes = new List<VarType>();
-            HashSet<string> paraNames = new HashSet<string>();
-            for (int i = 0; i < paraNum; ++i)
-            {
-                var ctx = context.var()[i];
-                paraTypes.Add(CalcType(ctx.type()));
-                string paraName = ctx.IDENT().GetText();
-                if (!paraNames.Contains(paraName))
-                    paraNames.Add(paraName);
-                else
-                    throw new ParsingException(ctx, $"duplicate predicate parameter '{paraName}'");
+            symbolTables.Push(new Dictionary<string, LocalVariable>());
+            var paraVars = new List<LocalVariable>(context.paraVar().Select(ctx => CalcParaVar(ctx)));
+            var paraTypes = new List<VarType>(paraVars.Select(var => var.type));            
 
-                LocalVariable paraVariable;
-                string paraVarName = counter.GetVariable(paraName);
-                if (paraTypes[i] is StructType sv)
-                {
-                    paraVariable = new StructVariable(sv, paraVarName);
-                }
-                else if (paraTypes[i] is ArrayType av)
-                {
-                    paraVariable = new ArrayVariable
-                    {
-                        type = paraTypes[i],
-                        name = paraVarName,
-                        length = new LocalVariable
-                        {
-                            type = IntType.Get(),
-                            name = Counter.GetLength(paraVarName)
-                        }
-                    };
-                }
-                else
-                {
-                    paraVariable = new LocalVariable
-                    {
-                        type = paraTypes[i],
-                        name = paraVarName
-                    };
-                }
-                parameters.Add(paraVariable);
-
-                symbolTables.Peek().Add(paraName, paraVariable);
-            }
-
-            annotated = true;
-            Expression expression = NotNullConfirm(context.expr());
-            annotated = null;
+            Expression expression = NotNullConfirm(context.pred());
 
             // 最后再把这个加到谓词表里，避免其表达式中有对自身的引用。
 
@@ -348,7 +239,7 @@ namespace cminor
             {
                 type = PredType.Get(paraTypes),
                 name = name,
-                parameters = parameters,
+                parameters = paraVars,
                 expression = expression
             };
             // 这里我们需要在表达式算完之后再将谓词名放到表里，

@@ -1,4 +1,10 @@
-int a[5];
+#include<stdio.h>
+
 int main() {
-    int a[5];
+    int i = 0;
+    for (; i < 10; ++i) {
+        if (i == 1) {
+            continue;
+        }
+    }
 }

@@ -1,5 +1,3 @@
-using System.Diagnostics.Contracts;
-
 namespace cminor
 {
     abstract class Variable
@@ -18,14 +16,7 @@ namespace cminor
         public LocalVariable length = default!;
     }
 
-    sealed class QuantifiedVariable : LocalVariable
-    {
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(this.type is IntType);
-        }
-    }
+    sealed class QuantifiedVariable : LocalVariable { }
 
     // MemberVariable 和其他的不太一样，它是放在结构体的定义里的，
     // 并不会实际出现在表达式里。

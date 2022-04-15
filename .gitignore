@@ -369,3 +369,6 @@ FodyWeavers.xsd
 .vscode/
 
 Properties/
+
+# Binary of C++
+*.out

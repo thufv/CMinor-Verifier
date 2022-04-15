@@ -1,79 +1,20 @@
-using System;
-
-using System.Collections.Generic;
-
 using System.Diagnostics;
+using System.Collections.Generic;
 
 using Antlr4.Runtime.Misc;
 
 namespace cminor
 {
-    partial class CFGGenerator : CMinorBaseVisitor<Expression?>
+    partial class CFGGenerator : CMinorParserBaseVisitor<Expression?>
     {
-        public override Expression? VisitVarDeclStmt([NotNull] CMinorParser.VarDeclStmtContext context)
-        {
-            Debug.Assert(currentBlock != null);
-
-            // 分别依次算出类型、变量名和初始化表达式
-            // 这里的顺序其实是 undefined behavior
-            // 我们目前这种方式，会导致如果右边的初始化表达式里有左边正在定义的变量的话
-            // 这个变量会是一个
-            VarType type = CalcType(context.var().type());
-            string name = context.var().IDENT().GetText();
-            if (symbolTables.Peek().ContainsKey(name))
-                throw new ParsingException(context, $"duplicate declared variable {name}");
-
-            // 用上面算出来的类型、变量名和初始化表达式构成一个变量整体
-            LocalVariable localVariable;
-            string varName = counter.GetVariable(name);
-            switch (type)
-            {
-                case StructType st:
-                    localVariable = new StructVariable(st, varName);
-                    break;
-                case ArrayType at:
-                    localVariable = new ArrayVariable
-                    {
-                        type = at,
-                        name = varName,
-                        length = new LocalVariable
-                        {
-                            type = IntType.Get(),
-                            name = Counter.GetLength(varName)
-                        }
-                    };
-                    break;
-                default:
-                    localVariable = new LocalVariable
-                    {
-                        type = type,
-                        name = varName
-                    };
-                    break;
-            }
-            symbolTables.Peek().Add(name, localVariable);
-
-            // 这里我们采用和 C/C++ 一样的设定，即在初始化表达式中可以出现正在定义的变量，
-            // 但这个变量在这个初始化表达式中的值是未定义的。
-
-            // 如果说有初始化表达式存在，那么其实就相当于一个赋值语句，所以也需要放到现在的 block 里
-            if (context.expr() != null)
-            {
-                Assign(localVariable, context.expr());
-            }
-
-            return null;
-        }
-
         public override Expression? VisitExprStmt([NotNull] CMinorParser.ExprStmtContext context)
         {
             Debug.Assert(currentBlock != null);
+            Debug.Assert(currentFunction != null);
 
-            annotated = false;
             // 这里的表达式的返回值在对象语言中是可以为 void 的，
             // 也就是在元语言中可以为 null。
             Visit(context.expr());
-            annotated = null;
 
             return null;
         }
@@ -85,9 +26,7 @@ namespace cminor
 
             // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量
             // 作为 variable
-            annotated = false;
             Expression conditionExpression = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
-            annotated = null;
 
             Block prevBlock = currentBlock;
 
@@ -138,16 +77,13 @@ namespace cminor
             Debug.Assert(currentBlock != null);
             Debug.Assert(currentFunction != null);
 
-            annotated = true;
-            LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
-            annotated = null;
-
-            // to calculate condition
+            // calculate condition
+            LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.loopAnnot());
             currentBlock = loopheadBlock;
+            Block? outerContBlock = contBlock;
+            contBlock = loopheadBlock;
 
-            annotated = false;
             Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
-            annotated = null;
 
             // 开一个新的作用域
             symbolTables.Push(new Dictionary<string, LocalVariable>());
@@ -168,8 +104,8 @@ namespace cminor
             });
 
             // 开一个 post loop block，接在 exit loop block 后面
-            BasicBlock? outerPostLoopBlock = postLoopBlock;
-            postLoopBlock = new BasicBlock(currentFunction, exitBlock);
+            BasicBlock? outerBreakBlock = breakBlock;
+            breakBlock = new BasicBlock(currentFunction, exitBlock);
 
             // 访问 body
             currentBlock = bodyBlock;
@@ -181,23 +117,25 @@ namespace cminor
 
             // 结束循环
             symbolTables.Pop();
-            currentBlock = postLoopBlock;
-            postLoopBlock = outerPostLoopBlock;
+            currentBlock = breakBlock;
+            breakBlock = outerBreakBlock;
+            contBlock = outerContBlock;
 
             return null;
         }
 
-        // for ( var := init ; cond ; iter)
-        //
-        // 等价于
-        //
-        // {
-        //   var := init
-        //   while (cond) {
-        //     body
-        //     iter
-        //   }
-        // }
+        /* for ( var := init ; cond ; iter)
+        
+           等价于
+          
+           {
+             var := init
+             while (cond) {
+               body
+               iter
+             }
+           }
+        */
         public override Expression? VisitForStmt([NotNull] CMinorParser.ForStmtContext context)
         {
             Debug.Assert(currentBlock != null);
@@ -208,22 +146,9 @@ namespace cminor
 
             if (context.forInit() != null)
             { // declaration and possible initialization
-                if (context.forInit().var() != null)
+                if (context.forInit().localVar() != null)
                 {
-                    VarType type = CalcType(context.forInit().var().type());
-                    string name = context.forInit().var().IDENT().GetText();
-                    if (symbolTables.Peek().ContainsKey(name))
-                        throw new ParsingException(context, $"duplicate variable {name}");
-
-                    LocalVariable localVariable = type is StructType structType
-                        ? new StructVariable(structType, counter.GetVariable(name))
-                        : new LocalVariable
-                        {
-                            type = type,
-                            name = counter.GetVariable(name)
-                        };
-                    symbolTables.Peek().Add(name, localVariable);
-
+                    LocalVariable localVariable = CalcLocalVar(context.forInit().localVar());
                     if (context.forInit().expr() != null)
                         Assign(localVariable, context.forInit().expr());
                 }
@@ -235,15 +160,11 @@ namespace cminor
             }
 
             // loop head block
-            annotated = true;
-            LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.beforeBranch().annotationWithLabel(), context.beforeBranch().termination());
-            annotated = null;
+            LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.loopAnnot());
             currentBlock = loopheadBlock;
 
             // condition
-            annotated = false;
             Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
-            annotated = null;
 
             // 开一个 body block
             BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);
@@ -254,23 +175,11 @@ namespace cminor
                 condition = condition
             });
 
-            // 开一个 exit loop block，其中其实只有一条 assume 语句
-            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Expression notCondition = new NotExpression(condition);
-            exitBlock.AddStatement(new AssumeStatement
-            {
-                condition = notCondition
-            });
-
-            // 开一个 post loop block，接在 exit loop block 后面
-            BasicBlock? outerPostLoopBlock = postLoopBlock;
-            postLoopBlock = new BasicBlock(currentFunction, exitBlock);
-
-            // 访问 body
-            currentBlock = bodyBlock;
-            Visit(context.stmt());
-
-            annotated = false;
+            // iter block
+            Block? outerContBlock = contBlock;
+            contBlock = new BasicBlock(currentFunction, bodyBlock);
+            Block.AddEdge(contBlock, loopheadBlock);
+            currentBlock = contBlock;
             if (context.forIter() != null)
             {
                 if (context.forIter().expr() != null)
@@ -285,8 +194,83 @@ namespace cminor
                     Visit(context.forIter().assign());
                 }
             }
-            annotated = null;
 
+            // 开一个 exit loop block，其中其实只有一条 assume 语句
+            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
+            Expression notCondition = new NotExpression(condition);
+            exitBlock.AddStatement(new AssumeStatement
+            {
+                condition = notCondition
+            });
+
+            // 开一个新的 break block，接在 exit loop block 后面
+            BasicBlock? outerBreakBlock = breakBlock;
+            breakBlock = new BasicBlock(currentFunction, exitBlock);
+
+            // 访问 body
+            currentBlock = bodyBlock;
+            Visit(context.stmt());
+
+            // 结束循环
+            symbolTables.Pop();
+            currentBlock = breakBlock;
+            breakBlock = outerBreakBlock;
+            contBlock = outerContBlock;
+
+            return null;
+        }
+
+        /* do { body } while (cond)
+           
+           等价于
+
+           { body1 } while (cond) { body2 }
+         */
+        public override Expression? VisitDoStmt([NotNull] CMinorParser.DoStmtContext context)
+        {
+            Debug.Assert(currentBlock != null);
+            Debug.Assert(currentFunction != null);
+
+            // 开一个 body block
+            BasicBlock bodyBlock1 = new BasicBlock(currentFunction, currentBlock);
+
+            // 访问 body
+            currentBlock = bodyBlock1;
+            Visit(context.stmt());
+
+            // calculate condition
+            LoopHeadBlock loopheadBlock = CalcLoopHeadBlock(context.loopAnnot());
+            currentBlock = loopheadBlock;
+            Block? outerContBlock = contBlock;
+            contBlock = outerContBlock;
+
+            Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
+
+            // 开一个新的作用域
+            symbolTables.Push(new Dictionary<string, LocalVariable>());
+
+            // 开一个 body block
+            BasicBlock bodyBlock2 = new BasicBlock(currentFunction, loopheadBlock);
+            bodyBlock2.AddStatement(new AssumeStatement
+            {
+                condition = condition
+            });
+
+            // 开一个 exit loop block，里面其实只有一条语句，就是 assume notCondition
+            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
+            Expression notCondition = new NotExpression(condition);
+            exitBlock.AddStatement(new AssumeStatement
+            {
+                condition = notCondition
+            });
+
+            // 开一个 post loop block，接在 exit loop block 后面
+            BasicBlock? outerBreakBlock = breakBlock;
+            breakBlock = new BasicBlock(currentFunction, exitBlock);
+
+            // 访问 body
+            currentBlock = bodyBlock2;
+            Visit(context.stmt());
             if (currentBlock != null)
             {
                 Block.AddEdge(currentBlock, loopheadBlock);
@@ -294,8 +278,9 @@ namespace cminor
 
             // 结束循环
             symbolTables.Pop();
-            currentBlock = postLoopBlock;
-            postLoopBlock = outerPostLoopBlock;
+            currentBlock = breakBlock;
+            breakBlock = outerBreakBlock;
+            contBlock = outerContBlock;
 
             return null;
         }
@@ -304,10 +289,23 @@ namespace cminor
         {
             Debug.Assert(currentBlock != null);
 
-            if (postLoopBlock == null)
+            if (breakBlock == null)
                 throw new ParsingException(context, "a break statement is not within loop.");
 
-            Block.AddEdge(currentBlock, postLoopBlock);
+            Block.AddEdge(currentBlock, breakBlock);
+            currentBlock = null;
+
+            return null;
+        }
+
+        public override Expression? VisitContStmt([NotNull] CMinorParser.ContStmtContext context)
+        {
+            Debug.Assert(currentBlock != null);
+
+            if (contBlock == null)
+                throw new ParsingException(context, "a break statement is not within loop.");
+
+            Block.AddEdge(currentBlock, contBlock);
             currentBlock = null;
 
             return null;
@@ -338,32 +336,14 @@ namespace cminor
             return null;
         }
 
-        public override Expression? VisitAssertStmt([NotNull] CMinorParser.AssertStmtContext context)
-        {
-            Debug.Assert(currentBlock != null);
-
-            // 尽管这里的类型应该是已经被 confirm 过一遍了，但多 confirm 一次是更加保险的选择
-            annotated = true;
-            Expression annotation = TypeConfirm(context.annotationWithLabel(), BoolType.Get());
-            annotated = null;
-
-            currentBlock.AddStatement(new AssertStatement
-            {
-                annotation = annotation
-            });
-
-            return null;
-        }
-
-        public override Expression? VisitStmtBlock([NotNull] CMinorParser.StmtBlockContext context)
+        public override Expression? VisitBlockStmt([NotNull] CMinorParser.BlockStmtContext context)
         {
             symbolTables.Push(new Dictionary<string, LocalVariable>());
-            foreach (var stmt in context.stmt())
-            {
-                Visit(stmt);
-                if (currentBlock == null)
-                    break;
-            }
+            foreach (var child in context.children)
+                if (child is CMinorParser.StmtContext stmt)
+                    Visit(stmt);
+                else if (child is CMinorParser.DeclContext decl)
+                    Visit(decl);
             symbolTables.Pop();
             return null;
         }
@@ -383,7 +363,6 @@ namespace cminor
         {
             Debug.Assert(currentBlock != null);
 
-            annotated = false;
             LocalVariable lv = FindVariable(context, context.IDENT().GetText());
             if (lv is ArrayVariable av)
             {
@@ -392,14 +371,14 @@ namespace cminor
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
                 {
-                    annotation = new LEExpression(new IntConstantExpression(0), subscript)
+                    pred = new LEExpression(new IntConstantExpression(0), subscript)
                 });
                 // runtime assertion: subscript < length
                 if (av.length != null)
                 {
                     currentBlock.AddStatement(new AssertStatement()
                     {
-                        annotation = new LTExpression(subscript, new LengthExpression(new VariableExpression(av)))
+                        pred = new LTExpression(subscript, new LengthExpression(new VariableExpression(av)))
                     });
                 }
 
@@ -414,7 +393,6 @@ namespace cminor
             }
             else
                 throw new ParsingException(context, "request for an element in a non-array variable.");
-            annotated = null;
             return null;
         }
 
@@ -434,9 +412,7 @@ namespace cminor
                 LocalVariable variable = sv.members[memberName];
 
                 // 求出右边的表达式
-                annotated = false;
                 Expression rhs = TypeConfirm(context.expr(), variable.type);
-                annotated = null;
 
                 // 把赋值语句加到基本块里
                 currentBlock.AddStatement(new VariableAssignStatement
@@ -456,9 +432,7 @@ namespace cminor
         {
             Debug.Assert(currentBlock != null);
 
-            annotated = false;
             Expression rhs = TypeConfirm(rhsContext, lhsVariable.type);
-            annotated = null;
 
             switch (rhs.type)
             {

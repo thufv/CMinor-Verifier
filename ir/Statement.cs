@@ -92,12 +92,12 @@ namespace cminor
 
     sealed class AssertStatement : Statement
     {
-        public Expression annotation = default!;
+        public Expression pred = default!;
 
         public override void Print(TextWriter writer)
         {
             writer.Write("\t@assert ");
-            annotation.Print(writer);
+            pred.Print(writer);
             writer.WriteLine("");
         }
     }

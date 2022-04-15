@@ -10,7 +10,13 @@ namespace cminor
 {
     abstract class Expression
     {
-        public VarType type = default!;
+        public VarType type { get; protected set; } = default!;
+
+        public abstract void Print(TextWriter writer);
+
+        public abstract Expression Substitute(LocalVariable s, Expression t);
+
+        public abstract HashSet<LocalVariable> GetFreeVariables();
 
         [ContractInvariantMethod]
         void ObjectInvariant()
@@ -19,17 +25,9 @@ namespace cminor
             // 注意：FunctionCallExpression 并不是 Expression 的 subclass
             Contract.Invariant(!(type is StructType) || (this is VariableExpression));
 
-            // 如果一个 expression 是一个 array expression，那么有且仅有两种情况：
-            // 1. 它是一个 variable expression，并且其中的 variable 是一个 array variable
-            // 2. 它是一个 array update expression
-            Contract.Invariant(!(type is ArrayType) || (this is VariableExpression || this is ArrayUpdateExpression));
+            // 如果一个 expression 是一个 array expression，当且仅当，它是一个 variable expression，并且其中的 variable 是一个 array variable
+            Contract.Invariant((type is ArrayType) == (this is VariableExpression ve && ve.variable.type is ArrayType));
         }
-
-        public abstract void Print(TextWriter writer);
-
-        public abstract Expression Substitute(LocalVariable s, Expression t);
-
-        public abstract HashSet<LocalVariable> GetFreeVariables();
     }
 
     sealed class VariableExpression : Expression
@@ -153,59 +151,12 @@ namespace cminor
         }
     }
 
-    sealed class PredicateCallExpression : Expression
-    {
-        public Predicate predicate;
-        public List<Expression> argumentExpressions;
-
-        public PredicateCallExpression(Predicate predicate, List<Expression> argumentExpressions)
-        {
-            this.type = BoolType.Get();
-            this.predicate = predicate;
-            this.argumentExpressions = argumentExpressions;
-        }
-
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(this.argumentExpressions.Count == predicate.type.paraTypes.Count);
-        }
-
-        public override void Print(TextWriter writer)
-        {
-            writer.Write($"{predicate.name}(");
-            for (int i = 0; i < argumentExpressions.Count; ++i)
-            {
-                if (i != 0) writer.Write(", ");
-                argumentExpressions[i].Print(writer);
-            }
-            writer.Write(")");
-        }
-
-        public override Expression Substitute(LocalVariable s, Expression t)
-        {
-            return new PredicateCallExpression(predicate,
-                new List<Expression>(
-                    argumentExpressions.Select(
-                        argumentExpression =>
-                            argumentExpression.Substitute(s, t))));
-        }
-
-        public override HashSet<LocalVariable> GetFreeVariables()
-        {
-            var fvs = new HashSet<LocalVariable>();
-            foreach (var ae in argumentExpressions)
-                fvs.UnionWith(ae.GetFreeVariables());
-            return fvs;
-        }
-    }
-
-    sealed class SubscriptExpression : Expression
+    sealed class ArrayAccessExpression : Expression
     {
         public Expression array;
         public Expression subscript;
 
-        public SubscriptExpression(Expression array, Expression subscript)
+        public ArrayAccessExpression(Expression array, Expression subscript)
         {
             Debug.Assert(array.type is ArrayType);
             Debug.Assert(subscript.type is IntType);
@@ -225,7 +176,7 @@ namespace cminor
 
         public override Expression Substitute(LocalVariable s, Expression t)
         {
-            return new SubscriptExpression(array.Substitute(s, t), subscript.Substitute(s, t));
+            return new ArrayAccessExpression(array.Substitute(s, t), subscript.Substitute(s, t));
         }
 
         public override HashSet<LocalVariable> GetFreeVariables()
@@ -356,12 +307,11 @@ namespace cminor
         {
             writer.Write("(");
             le.Print(writer);
-            writer.Write($" {GetOperator()} ");
+            string op = (string)this.GetType().GetMethod("op")!.Invoke(null, null)!;
+            writer.Write($" {op} ");
             re.Print(writer);
             writer.Write(")");
         }
-
-        protected abstract string GetOperator();
 
         public override Expression Substitute(LocalVariable s, Expression t)
         {
@@ -380,11 +330,23 @@ namespace cminor
             fvs.UnionWith(re.GetFreeVariables());
             return fvs;
         }
+
+        public static BinaryExpression FromOp(string op, Expression le, Expression re) {
+            foreach (System.Type type in typeof(BinaryExpression).Assembly.GetTypes())
+                if (type.IsSubclassOf(typeof(BinaryExpression))
+                    && (string)type.GetMethod("op")!.Invoke(null, null)! == op)
+                {
+                    return (BinaryExpression)type
+                            .GetConstructor(new System.Type[] { typeof(Expression), typeof(Expression) })!
+                            .Invoke(new object[] {});
+                }
+            throw new ArgumentException($"There is no binary expression of operator '{op}'.");
+        }
     }
 
     sealed class MultiExpression : BinaryExpression
     {
-        protected override string GetOperator() => "*";
+        public static string GetOperator() => "*";
 
         public MultiExpression(Expression le, Expression re)
         {
@@ -395,27 +357,14 @@ namespace cminor
         }
     }
 
-    sealed class FloatDivExpression : BinaryExpression
-    {
-        protected override string GetOperator() => "/";
-
-        public FloatDivExpression(Expression le, Expression re)
-        {
-            Debug.Assert(le.type is FloatType && re.type is FloatType);
-            this.type = FloatType.Get();
-            this.le = le;
-            this.re = re;
-        }
-    }
-
     sealed class DivExpression : BinaryExpression
     {
-        protected override string GetOperator() => "div";
+        public string GetOperator() => "/";
 
         public DivExpression(Expression le, Expression re)
         {
-            Debug.Assert(le.type is IntType && re.type is IntType);
-            this.type = IntType.Get();
+            Debug.Assert(le.type is FloatType && re.type is FloatType || le.type is IntType && re.type is IntType);
+            this.type = FloatType.Get();
             this.le = le;
             this.re = re;
         }
@@ -423,7 +372,7 @@ namespace cminor
 
     sealed class ModExpression : BinaryExpression
     {
-        protected override string GetOperator() => "%";
+        public string GetOperator() => "%";
 
         public ModExpression(Expression le, Expression re)
         {
@@ -436,7 +385,7 @@ namespace cminor
 
     sealed class AddExpression : BinaryExpression
     {
-        protected override string GetOperator() => "+";
+        public string GetOperator() => "+";
 
         public AddExpression(Expression le, Expression re)
         {
@@ -449,7 +398,7 @@ namespace cminor
 
     sealed class SubExpression : BinaryExpression
     {
-        protected override string GetOperator() => "-";
+        public string GetOperator() => "-";
 
         public SubExpression(Expression le, Expression re)
         {
@@ -462,7 +411,7 @@ namespace cminor
 
     sealed class LTExpression : BinaryExpression
     {
-        protected override string GetOperator() => "<";
+        public string GetOperator() => "<";
 
         public LTExpression(Expression le, Expression re)
         {
@@ -475,7 +424,7 @@ namespace cminor
 
     sealed class LEExpression : BinaryExpression
     {
-        protected override string GetOperator() => "<=";
+        public string GetOperator() => "<=";
 
         public LEExpression(Expression le, Expression re)
         {
@@ -488,7 +437,7 @@ namespace cminor
 
     sealed class GTExpression : BinaryExpression
     {
-        protected override string GetOperator() => ">";
+        public string GetOperator() => ">";
 
         public GTExpression(Expression le, Expression re)
         {
@@ -501,7 +450,7 @@ namespace cminor
 
     sealed class GEExpression : BinaryExpression
     {
-        protected override string GetOperator() => ">=";
+        public string GetOperator() => ">=";
 
         public GEExpression(Expression le, Expression re)
         {
@@ -514,7 +463,7 @@ namespace cminor
 
     sealed class EQExpression : BinaryExpression
     {
-        protected override string GetOperator() => "=";
+        public string GetOperator() => "=";
 
         public EQExpression(Expression le, Expression re)
         {
@@ -527,7 +476,7 @@ namespace cminor
 
     sealed class NEExpression : BinaryExpression
     {
-        protected override string GetOperator() => "!=";
+        public string GetOperator() => "!=";
 
         public NEExpression(Expression le, Expression re)
         {
@@ -535,6 +484,81 @@ namespace cminor
             this.type = BoolType.Get();
             this.le = le;
             this.re = re;
+        }
+    }
+
+    sealed class AndExpression : BinaryExpression
+    {
+        public AndExpression(Expression le, Expression re)
+        {
+            Debug.Assert(le.type is BoolType && re.type is BoolType);
+            this.type = BoolType.Get();
+            this.le = le;
+            this.re = re;
+        }
+
+        public string GetOperator() => "&&";
+    }
+
+    sealed class OrExpression : BinaryExpression
+    {
+        public OrExpression(Expression le, Expression re)
+        {
+            Debug.Assert(le.type is BoolType && re.type is BoolType);
+            this.type = BoolType.Get();
+            this.le = le;
+            this.re = re;
+        }
+
+        public string GetOperator() => "||";
+    }
+
+    sealed class LengthExpression : UnaryExpression
+    {
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            Contract.Invariant(expression.type is ArrayType);
+            Contract.Invariant(expression is VariableExpression || expression is ArrayUpdateExpression);
+        }
+
+        public LengthExpression(Expression expression)
+        {
+            Debug.Assert(expression.type is ArrayType);
+            this.type = IntType.Get();
+            this.expression = expression;
+        }
+
+        public override void Print(TextWriter writer)
+        {
+            writer.Write("\\length(");
+            expression.Print(writer);
+            writer.Write(")");
+        }
+
+        public override Expression Substitute(LocalVariable s, Expression t)
+        {
+            Expression expression = this.expression.Substitute(s, t);
+            if (expression is VariableExpression ve)
+            {
+                Debug.Assert(ve.variable is ArrayVariable);
+                if (((ArrayVariable)(ve.variable)).length == s)
+                {
+                    return t;
+                }
+                else
+                {
+                    return new LengthExpression(expression);
+                }
+            }
+            else
+            {
+                Debug.Assert(expression is ArrayUpdateExpression);
+                if (((ArrayUpdateExpression)expression).length.variable == s)
+                    return t;
+                else
+                    return new LengthExpression(expression);
+            }
         }
     }
 
@@ -553,7 +577,7 @@ namespace cminor
 
         public override void Print(TextWriter writer)
         {
-            writer.Write($"({GetQuantifier()} ");
+            writer.Write($"(\\{GetQuantifier()} ");
             bool isFirst = true;
             foreach (var v in vars.Values)
             {
@@ -606,32 +630,6 @@ namespace cminor
         protected override string GetQuantifier() => "exists";
     }
 
-    sealed class AndExpression : BinaryExpression
-    {
-        public AndExpression(Expression le, Expression re)
-        {
-            Debug.Assert(le.type is BoolType && re.type is BoolType);
-            this.type = BoolType.Get();
-            this.le = le;
-            this.re = re;
-        }
-
-        protected override string GetOperator() => "&&";
-    }
-
-    sealed class OrExpression : BinaryExpression
-    {
-        public OrExpression(Expression le, Expression re)
-        {
-            Debug.Assert(le.type is BoolType && re.type is BoolType);
-            this.type = BoolType.Get();
-            this.le = le;
-            this.re = re;
-        }
-
-        protected override string GetOperator() => "||";
-    }
-
     sealed class ImplicationExpression : BinaryExpression
     {
         public ImplicationExpression(Expression le, Expression re)
@@ -642,7 +640,7 @@ namespace cminor
             this.re = re;
         }
 
-        protected override string GetOperator() => "->";
+        public string GetOperator() => "==>";
     }
 
     sealed class IffExpression : BinaryExpression
@@ -655,55 +653,66 @@ namespace cminor
             this.re = re;
         }
 
-        protected override string GetOperator() => "<->";
+        public string GetOperator() => "<==>";
     }
 
-    sealed class LengthExpression : UnaryExpression
+    sealed class XorExpression : BinaryExpression
     {
+        public XorExpression(Expression le, Expression re)
+        {
+            Debug.Assert(le.type is BoolType && re.type is BoolType);
+            this.type = BoolType.Get();
+            this.le = le;
+            this.re = re;
+        }
+
+        public string GetOperator() => "^^";
+    }
+    
+    sealed class PredicateCallExpression : Expression
+    {
+        public Predicate predicate;
+        public List<Expression> argumentExpressions;
+
+        public PredicateCallExpression(Predicate predicate, List<Expression> argumentExpressions)
+        {
+            this.type = BoolType.Get();
+            this.predicate = predicate;
+            this.argumentExpressions = argumentExpressions;
+        }
+
         [ContractInvariantMethod]
         void ObjectInvariant()
         {
-            Contract.Invariant(expression.type is ArrayType);
-            Contract.Invariant(expression is VariableExpression || expression is ArrayUpdateExpression);
-        }
-
-        public LengthExpression(Expression expression)
-        {
-            Debug.Assert(expression.type is ArrayType);
-            this.type = IntType.Get();
-            this.expression = expression;
+            Contract.Invariant(this.argumentExpressions.Count == predicate.type.paraTypes.Count);
         }
 
         public override void Print(TextWriter writer)
         {
-            writer.Write("|");
-            expression.Print(writer);
-            writer.Write("|");
+            writer.Write($"{predicate.name}(");
+            for (int i = 0; i < argumentExpressions.Count; ++i)
+            {
+                if (i != 0) writer.Write(", ");
+                argumentExpressions[i].Print(writer);
+            }
+            writer.Write(")");
         }
 
         public override Expression Substitute(LocalVariable s, Expression t)
         {
-            Expression expression = this.expression.Substitute(s, t);
-            if (expression is VariableExpression ve)
-            {
-                Debug.Assert(ve.variable is ArrayVariable);
-                if (((ArrayVariable)(ve.variable)).length == s)
-                {
-                    return t;
-                }
-                else
-                {
-                    return new LengthExpression(expression);
-                }
-            }
-            else
-            {
-                Debug.Assert(expression is ArrayUpdateExpression);
-                if (((ArrayUpdateExpression)expression).length.variable == s)
-                    return t;
-                else
-                    return new LengthExpression(expression);
-            }
+            return new PredicateCallExpression(predicate,
+                new List<Expression>(
+                    argumentExpressions.Select(
+                        argumentExpression =>
+                            argumentExpression.Substitute(s, t))));
+        }
+
+        public override HashSet<LocalVariable> GetFreeVariables()
+        {
+            var fvs = new HashSet<LocalVariable>();
+            foreach (var ae in argumentExpressions)
+                fvs.UnionWith(ae.GetFreeVariables());
+            return fvs;
         }
     }
 }

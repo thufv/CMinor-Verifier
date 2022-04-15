@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using System.Diagnostics;
@@ -9,46 +10,105 @@ using Antlr4.Runtime.Misc;
 namespace cminor
 {
     // 如果是专属于某一部分的 util method，就放到直接放到它的那个文件里吧QAQ
-    partial class CFGGenerator : CMinorBaseVisitor<Expression?>
+    partial class CFGGenerator : CMinorParserBaseVisitor<Expression?>
     {
-        // We don't override VisitType and VisitAtomicType,
-        // as we directly use the following method CalcType.
-        VarType CalcType([NotNull] CMinorParser.TypeContext context)
+        VarType CalcType(string type, bool isArray)
         {
-            if (context.IDENT() != null)
-            { // struct type
-                string structName = context.IDENT().GetText();
-                if (structTable.ContainsKey(structName))
-                    return structTable[structName].type;
-                else
-                    throw new ParsingException(context, $"unknown type '{structName}'.");
-            }
-            else
+            if (AtomicType.availableNames.Contains(type))
             { // atomic type or array type
-                AtomicType atomicType;
-                switch (context.atomicType().GetText())
-                {
-                    case "int":
-                        atomicType = IntType.Get();
-                        break;
-                    case "float":
-                        atomicType = FloatType.Get();
-                        break;
-                    case "bool":
-                        atomicType = BoolType.Get();
-                        break;
-                    default:
-                        throw new ParsingException(context, "an atomic type that is not int, float, nor bool is found. Probably a bug occurs.");
-                }
-                if (context.ChildCount == 1)
-                { // atomic type
-                    return atomicType;
-                }
-                else
+                AtomicType atomicType = AtomicType.FromString(type);
+                if (isArray)
                 { // array type
                     return ArrayType.Get(atomicType);
                 }
+                else
+                { // atomic type
+                    return atomicType;
+                }
             }
+            else
+            { // struct type
+                Debug.Assert(!isArray);
+                if (structTable.ContainsKey(type))
+                    return structTable[type].type;
+                else
+                    throw new ArgumentException($"unknown type '{type}'.");
+            }
+        }
+
+        LocalVariable CalcVar([NotNull] ParserRuleContext context, string name, VarType type)
+        {
+            if (symbolTables.Peek().ContainsKey(name))
+                throw new ParsingException(context, $"duplicate declared variable {name}");
+            name = counter.GetVariable(name);
+            
+            LocalVariable variable;
+            if (type is StructType st)
+            {
+                variable = new StructVariable(st, name);
+            }
+            else if (type is ArrayType at)
+            {
+                variable = new ArrayVariable
+                {
+                    type = at,
+                    name = name,
+                    length = new LocalVariable
+                    {
+                        type = IntType.Get(),
+                        name = Counter.GetLength(name)
+                    }
+                };
+            }
+            else
+            {
+                Debug.Assert(type is AtomicType);
+                variable = new LocalVariable
+                {
+                    type = type,
+                    name = name
+                };
+            }
+
+            // 把新建出来的变量放到符号表里并返回
+            symbolTables.Peek().Add(name, variable);
+            return variable;
+        }
+
+        LocalVariable CalcLocalVar([NotNull] CMinorParser.LocalVarContext context)
+        {
+            Debug.Assert(currentBlock != null);
+
+            string name = context.IDENT().Last().GetText();
+            VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);
+            LocalVariable lv = CalcVar(context, name, type);
+
+            // 对于数组来说，在声明时我们会要求指定一个 literal 作为长度。
+            if (context.INT_CONSTANT() != null)
+            {
+                Debug.Assert(type is ArrayType);
+
+                currentBlock.AddStatement(new VariableAssignStatement
+                {
+                    variable = lv,
+                    rhs = new IntConstantExpression(int.Parse(context.INT_CONSTANT().GetText()))
+                });
+            }
+
+            return lv;
+        }
+
+        LocalVariable CalcParaVar([NotNull] CMinorParser.ParaVarContext context)
+        {
+            string name = context.IDENT().Last().GetText();
+            VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);
+            return CalcVar(context, name, type);
+        }
+
+        LocalVariable CalcRetVar([NotNull] CMinorParser.RetVarContext context)
+        {
+            VarType type = CalcType(context.GetChild(0).GetText(), false);
+            return CalcVar(context, "\\result", type);
         }
 
         Expression TypeConfirm([NotNull] ParserRuleContext context, Type intendedType)

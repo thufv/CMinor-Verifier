@@ -14,7 +14,28 @@ namespace cminor
 
     abstract class VarType : Type { }
 
-    abstract class AtomicType : VarType { }
+    abstract class AtomicType : VarType
+    {
+        public static AtomicType FromString(string s)
+        {
+            switch(s)
+            {
+                case "int": case "integer":
+                    return IntType.Get();
+                case "float": case "real":
+                    return FloatType.Get();
+                case "bool": case "boolean":
+                    return BoolType.Get();
+                default:
+                    throw new ArgumentException($"Failed to parse {s} as an atomic type, which is neither int/integer, float/real nor bool/boolean.");
+            }
+        }
+
+        public static HashSet<String> availableNames = new HashSet<String>()
+        {
+            "int", "integer", "float", "real", "bool", "boolean"
+        };
+    }
 
     sealed class IntType : AtomicType
     {

@@ -91,10 +91,10 @@ namespace cminor
                         from: predicates[pce.predicate].Item2,
                         to: pce.argumentExpressions.Select(
                             expression => ExpressionToZ3Expr(expression)).ToArray());
-                case SubscriptExpression se:
+                case ArrayAccessExpression aae:
                     {
-                        Expr array = ExpressionToZ3Expr(se.array);
-                        Expr subscript = ExpressionToZ3Expr(se.subscript);
+                        Expr array = ExpressionToZ3Expr(aae.array);
+                        Expr subscript = ExpressionToZ3Expr(aae.subscript);
 
                         Debug.Assert(array is ArrayExpr);
 
@@ -137,7 +137,6 @@ namespace cminor
                                     (ArithExpr)le,
                                     (ArithExpr)re
                                 });
-                            case FloatDivExpression:
                             case DivExpression:
                                 Debug.Assert(le is ArithExpr);
                                 Debug.Assert(re is ArithExpr);
@@ -220,14 +219,32 @@ namespace cminor
                                 Debug.Assert(re is BoolExpr);
 
                                 return ctx.MkIff((BoolExpr)le, (BoolExpr)re);
+                            case XorExpression:
+                                Debug.Assert(le is BoolExpr);
+                                Debug.Assert(re is BoolExpr);
+
+                                return ctx.MkXor((BoolExpr)le, (BoolExpr)re);
                         }
 
                         Debug.Assert(false);
                         break;
                     }
                 case QuantifiedExpression qe:
-                    Expr[] boundConstants = qe.vars.Values.Select(
-                        varaible => ctx.MkIntConst(varaible.name)
+                    Expr[] boundConstants = qe.vars.Values.Select<QuantifiedVariable, Expr>(
+                        variable =>
+                        {
+                            switch (variable.type)
+                            {
+                                case IntType:
+                                    return ctx.MkIntConst(variable.name);
+                                case FloatType:
+                                    return ctx.MkRealConst(variable.name);
+                                case BoolType:
+                                    return ctx.MkBoolConst(variable.name);
+                                default:
+                                    throw new ArgumentException($"there is a type of quantified variable that is not atomic type: {variable.type}");
+                            }
+                        }
                     ).ToArray();
                     Expr body = ExpressionToZ3Expr(qe.expression);
                     if (qe is ForallQuantifiedExpression)

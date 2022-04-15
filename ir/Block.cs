@@ -84,7 +84,7 @@ namespace cminor
 
     sealed class PostconditionBlock : Block
     {
-        public Expression condition = default!;
+        public List<Expression> conditions = new List<Expression>();
 
         static int numberCounter = 0;
         public int number { get; } = ++numberCounter;
@@ -103,7 +103,8 @@ namespace cminor
 
             PrintPredecessors(writer);
 
-            PrintCondition(writer, "post", condition);
+            foreach (Expression condition in conditions)
+                PrintCondition(writer, "post", condition);
         }
 
         public override string ToString() => $"_POSTCOND#{number}";
@@ -111,34 +112,26 @@ namespace cminor
 
     abstract class HeadBlock : Block
     {
-        public List<Expression> rankingFunction = default!;
+        public Expression? rankingFunction = null;
 
         public HeadBlock() { }
         public HeadBlock(Function currentFunction, Block? predecessor)
             : base(currentFunction, predecessor) { }
 
-        [ContractInvariantMethod]
-        void ObjectInvariant()
-        {
-            Contract.Invariant(rankingFunction.Count > 0);
-        }
-
         protected void PrintRankingFunction(TextWriter writer)
         {
-            writer.WriteLine("\t#rankingfunction\n\t(");
-            for (int i = 0; i < rankingFunction.Count; ++i)
+            writer.WriteLine("\t#rankingfunction (");
+            if (rankingFunction != null)
             {
-                writer.Write("\t\t");
-                rankingFunction[i].Print(writer);
-                writer.Write(",\n");
+                rankingFunction.Print(writer);
             }
-            writer.WriteLine("\t)");
+            writer.WriteLine(")");
         }
     }
 
     sealed class PreconditionBlock : HeadBlock
     {
-        public Expression condition = default!;
+        public List<Expression> conditions = new List<Expression>();
 
         static int numberCounter = 0;
         public int number { get; } = ++numberCounter;
@@ -149,6 +142,8 @@ namespace cminor
             Contract.Invariant(statements.Count == 0);
             Contract.Invariant(predecessors.Count == 0);
             Contract.Invariant(successors.Count == 1);
+            foreach (Expression cond in conditions)
+                Contract.Invariant(cond.type is BoolType);
         }
 
         public override void Print(TextWriter writer)
@@ -157,7 +152,8 @@ namespace cminor
 
             PrintSuccessors(writer);
 
-            PrintCondition(writer, "pre", condition);
+            foreach (Expression cond in conditions)
+                PrintCondition(writer, "pre", cond);
 
             PrintRankingFunction(writer);
         }
@@ -169,13 +165,20 @@ namespace cminor
     {
         // 这里的 statements 是用来算 condition 的！
 
-        public Expression invariant = default!;
+        public List<Expression> invariants = new List<Expression>();
 
         static int numberCounter = 0;
         public int number { get; } = ++numberCounter;
 
         public LoopHeadBlock(Function currentFunction, Block? predecessor = null)
             : base(currentFunction, predecessor) { }
+
+        [ContractInvariantMethod]
+        void ObjectInvariant()
+        {
+            foreach (Expression cond in invariants)
+                Contract.Invariant(cond.type is BoolType);
+        }
 
         public override void Print(TextWriter writer)
         {
@@ -184,7 +187,8 @@ namespace cminor
             PrintPredecessors(writer);
             PrintSuccessors(writer);
 
-            PrintCondition(writer, "invariant", invariant);
+            foreach (Expression invariant in invariants)
+                PrintCondition(writer, "invariant", invariant);
 
             PrintRankingFunction(writer);
 

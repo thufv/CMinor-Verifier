@@ -27,7 +27,7 @@ namespace cminor
                 HelpText = "The file (or 'console') to which the control flow graph is printed.")]
             public string? CFGFile { get; set; } = null;
 
-            [Usage(ApplicationAlias = "piVC-thu")]
+            [Usage(ApplicationAlias = "cminor")]
             public static IEnumerable<Example> Examples
             {
                 get

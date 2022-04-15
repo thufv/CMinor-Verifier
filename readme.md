@@ -11,7 +11,16 @@
 ### 不重要
 
 - [ ] logic function
-- [ ] visualizer 
+- [ ] visualizer
+- [ ] overflow/underflow checking: 或许可以留作作业？
+
+### 待实现的 ACSL
+
+- [ ] 2.2.4.3 overflow/underflow checking for quantified type.
+  - 诶……float 真的能做这个 check 嘛？
+- [ ] consecutive comparison operators
+- [ ] logic expression 里除数可能为 0 的问题 ACSL 是怎么解决的呢……没太看懂的样子qwq
+- [ ] global variable
 
 ## 简介
 
@@ -39,7 +48,7 @@
 本项目基本的使用方法是：
 
 ```bash
-piVC-thu --source <path>
+cminor --source <path>
 ```
 
 你可以在本项目的根目录下运行以下指令：
