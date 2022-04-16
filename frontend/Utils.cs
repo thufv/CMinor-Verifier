@@ -40,19 +40,19 @@ namespace cminor
         {
             if (symbolTables.Peek().ContainsKey(name))
                 throw new ParsingException(context, $"duplicate declared variable {name}");
-            name = counter.GetVariable(name);
+            string varname = counter.GetVariable(name);
             
             LocalVariable variable;
             if (type is StructType st)
             {
-                variable = new StructVariable(st, name);
+                variable = new StructVariable(st, varname);
             }
             else if (type is ArrayType at)
             {
                 variable = new ArrayVariable
                 {
                     type = at,
-                    name = name,
+                    name = varname,
                     length = new LocalVariable
                     {
                         type = IntType.Get(),
@@ -66,7 +66,7 @@ namespace cminor
                 variable = new LocalVariable
                 {
                     type = type,
-                    name = name
+                    name = varname
                 };
             }
 
@@ -99,6 +99,13 @@ namespace cminor
         }
 
         LocalVariable CalcParaVar([NotNull] CMinorParser.ParaVarContext context)
+        {
+            string name = context.IDENT().Last().GetText();
+            VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);
+            return CalcVar(context, name, type);
+        }
+
+        LocalVariable CalcLogicParaVar([NotNull] CMinorParser.LogicParaVarContext context)
         {
             string name = context.IDENT().Last().GetText();
             VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);

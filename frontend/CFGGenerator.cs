@@ -152,6 +152,7 @@ namespace cminor
             {
                 LocalVariable rv = CalcRetVar(context.retVar());
                 returnTypes.Add(rv.type);
+                rvs.Add(rv);
             }
 
             PreconditionBlock preconditionBlock = CalcPreconditionBlock(context.funcContract().requiresClause(), context.funcContract().decreasesClause());
@@ -228,8 +229,8 @@ namespace cminor
 
             // calculate parameters
             symbolTables.Push(new Dictionary<string, LocalVariable>());
-            var paraVars = new List<LocalVariable>(context.paraVar().Select(ctx => CalcParaVar(ctx)));
-            var paraTypes = new List<VarType>(paraVars.Select(var => var.type));            
+            var paraVars = new List<LocalVariable>(context.logicParaVar().Select(ctx => CalcLogicParaVar(ctx)));
+            var paraTypes = new List<VarType>(paraVars.Select(var => var.type));
 
             Expression expression = NotNullConfirm(context.pred());
 

@@ -40,6 +40,13 @@ retVar: atomicType IDENT | IDENT IDENT | 'void' IDENT;
 
 atomicType: 'int' | 'float';
 
+logicParaVar:
+	logicAtomicType IDENT
+	| IDENT IDENT
+	| logicAtomicType IDENT '[' ']';
+
+logicAtomicType: 'integer' | 'real' | 'boolean';
+
 /* about statement */
 stmt:
 	';'																# EmptyStmt
@@ -120,7 +127,7 @@ pred:
 	| pred '^^' pred											# XorPred
 	| ('\\forall' | '\\exists') binder (',' binder)* ';' pred	# QuantiPred;
 
-binder: ('boolean' | 'integer' | 'real') IDENT;
+binder: logicAtomicType IDENT (',' IDENT)*;
 
 funcContract:
 	'/*@' requiresClause* decreasesClause? ensuresClause* '*/'
@@ -145,8 +152,8 @@ loopAnnot:
 	)? LINEEND;
 
 predDef:
-	'/*@' 'predicate' IDENT ('(' paraVar (',' paraVar)* ')')? '=' pred ';' '*/'
-	| '//@' 'predicate' IDENT ('(' paraVar (',' paraVar)* ')')? '=' pred ';' LINEEND;
+	'/*@' 'predicate' IDENT ('(' logicParaVar (',' logicParaVar)* ')')? '=' pred ';' '*/'
+	| '//@' 'predicate' IDENT ('(' logicParaVar (',' logicParaVar)* ')')? '=' pred ';' LINEEND;
 
 /* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';

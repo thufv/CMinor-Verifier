@@ -307,7 +307,7 @@ namespace cminor
         {
             writer.Write("(");
             le.Print(writer);
-            string op = (string)this.GetType().GetMethod("op")!.Invoke(null, null)!;
+            string op = (string)this.GetType().GetMethod("GetOperator")!.Invoke(null, null)!;
             writer.Write($" {op} ");
             re.Print(writer);
             writer.Write(")");
@@ -333,12 +333,14 @@ namespace cminor
 
         public static BinaryExpression FromOp(string op, Expression le, Expression re) {
             foreach (System.Type type in typeof(BinaryExpression).Assembly.GetTypes())
-                if (type.IsSubclassOf(typeof(BinaryExpression))
-                    && (string)type.GetMethod("op")!.Invoke(null, null)! == op)
+                if (type.IsSubclassOf(typeof(BinaryExpression)))
                 {
-                    return (BinaryExpression)type
-                            .GetConstructor(new System.Type[] { typeof(Expression), typeof(Expression) })!
-                            .Invoke(new object[] {});
+                    if ((string)type.GetMethod("GetOperator")!.Invoke(null, null)! == op)
+                    {
+                        return (BinaryExpression)type
+                                .GetConstructor(new System.Type[] { typeof(Expression), typeof(Expression) })!
+                                .Invoke(new object[] { le, re });
+                    }
                 }
             throw new ArgumentException($"There is no binary expression of operator '{op}'.");
         }
@@ -359,7 +361,7 @@ namespace cminor
 
     sealed class DivExpression : BinaryExpression
     {
-        public string GetOperator() => "/";
+        public static string GetOperator() => "/";
 
         public DivExpression(Expression le, Expression re)
         {
@@ -372,7 +374,7 @@ namespace cminor
 
     sealed class ModExpression : BinaryExpression
     {
-        public string GetOperator() => "%";
+        public static string GetOperator() => "%";
 
         public ModExpression(Expression le, Expression re)
         {
@@ -385,7 +387,7 @@ namespace cminor
 
     sealed class AddExpression : BinaryExpression
     {
-        public string GetOperator() => "+";
+        public static string GetOperator() => "+";
 
         public AddExpression(Expression le, Expression re)
         {
@@ -398,7 +400,7 @@ namespace cminor
 
     sealed class SubExpression : BinaryExpression
     {
-        public string GetOperator() => "-";
+        public static string GetOperator() => "-";
 
         public SubExpression(Expression le, Expression re)
         {
@@ -411,7 +413,7 @@ namespace cminor
 
     sealed class LTExpression : BinaryExpression
     {
-        public string GetOperator() => "<";
+        public static string GetOperator() => "<";
 
         public LTExpression(Expression le, Expression re)
         {
@@ -424,7 +426,7 @@ namespace cminor
 
     sealed class LEExpression : BinaryExpression
     {
-        public string GetOperator() => "<=";
+        public static string GetOperator() => "<=";
 
         public LEExpression(Expression le, Expression re)
         {
@@ -437,7 +439,7 @@ namespace cminor
 
     sealed class GTExpression : BinaryExpression
     {
-        public string GetOperator() => ">";
+        public static string GetOperator() => ">";
 
         public GTExpression(Expression le, Expression re)
         {
@@ -450,7 +452,7 @@ namespace cminor
 
     sealed class GEExpression : BinaryExpression
     {
-        public string GetOperator() => ">=";
+        public static string GetOperator() => ">=";
 
         public GEExpression(Expression le, Expression re)
         {
@@ -463,7 +465,7 @@ namespace cminor
 
     sealed class EQExpression : BinaryExpression
     {
-        public string GetOperator() => "=";
+        public static string GetOperator() => "==";
 
         public EQExpression(Expression le, Expression re)
         {
@@ -476,7 +478,7 @@ namespace cminor
 
     sealed class NEExpression : BinaryExpression
     {
-        public string GetOperator() => "!=";
+        public static string GetOperator() => "!=";
 
         public NEExpression(Expression le, Expression re)
         {
@@ -489,6 +491,8 @@ namespace cminor
 
     sealed class AndExpression : BinaryExpression
     {
+        public static string GetOperator() => "&&";
+
         public AndExpression(Expression le, Expression re)
         {
             Debug.Assert(le.type is BoolType && re.type is BoolType);
@@ -496,12 +500,12 @@ namespace cminor
             this.le = le;
             this.re = re;
         }
-
-        public string GetOperator() => "&&";
     }
 
     sealed class OrExpression : BinaryExpression
     {
+        public static string GetOperator() => "||";
+
         public OrExpression(Expression le, Expression re)
         {
             Debug.Assert(le.type is BoolType && re.type is BoolType);
@@ -509,8 +513,6 @@ namespace cminor
             this.le = le;
             this.re = re;
         }
-
-        public string GetOperator() => "||";
     }
 
     sealed class LengthExpression : UnaryExpression
@@ -632,6 +634,8 @@ namespace cminor
 
     sealed class ImplicationExpression : BinaryExpression
     {
+        public static string GetOperator() => "==>";
+
         public ImplicationExpression(Expression le, Expression re)
         {
             Debug.Assert(le.type is BoolType && re.type is BoolType);
@@ -639,12 +643,12 @@ namespace cminor
             this.le = le;
             this.re = re;
         }
-
-        public string GetOperator() => "==>";
     }
 
     sealed class IffExpression : BinaryExpression
     {
+        public static string GetOperator() => "<==>";
+
         public IffExpression(Expression le, Expression re)
         {
             Debug.Assert(le.type is BoolType && re.type is BoolType);
@@ -652,12 +656,12 @@ namespace cminor
             this.le = le;
             this.re = re;
         }
-
-        public string GetOperator() => "<==>";
     }
 
     sealed class XorExpression : BinaryExpression
     {
+        public static string GetOperator() => "^^";
+
         public XorExpression(Expression le, Expression re)
         {
             Debug.Assert(le.type is BoolType && re.type is BoolType);
@@ -665,8 +669,6 @@ namespace cminor
             this.le = le;
             this.re = re;
         }
-
-        public string GetOperator() => "^^";
     }
     
     sealed class PredicateCallExpression : Expression

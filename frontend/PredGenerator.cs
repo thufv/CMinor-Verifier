@@ -25,9 +25,9 @@ namespace cminor
             var exprs = new List<Expression>();
             for (int i = 0; i < context.ChildCount; i += 2)
             {
-                exprs.Add(exprs[i]);
-                if (exprs[i].type == exprs[0].type)
-                    throw new ParsingException(context, $"The types of terms in CmpPred must be same, but there are {exprs[i].type} and {exprs[0].type}.");
+                exprs.Add(NotNullConfirm(context.term()[i >> 1]));
+                if (exprs.Last().type != exprs.First().type)
+                    throw new ParsingException(context, $"The types of terms in CmpPred must be same, but there are {exprs.Last().type} and {exprs.First().type}.");
             }
 
             var ops = new List<String>();
@@ -137,21 +137,28 @@ namespace cminor
         public override Expression VisitQuantiPred([NotNull] CMinorParser.QuantiPredContext context)
         {
             // 这里我们开一个新的作用域
-            // 当然 alhpa-renaming 也是要做的
+            // 当然 alpha-renaming 也是要做的
             symbolTables.Push(new Dictionary<string, LocalVariable>());
             Dictionary<string, QuantifiedVariable> vars = new Dictionary<string, QuantifiedVariable>();
-            foreach ((AtomicType type, String name) in context.binder().Select(
-                ctx => (AtomicType.FromString(ctx.GetChild(0).GetText()), ctx.IDENT().GetText())))
+            foreach ((AtomicType type, List<String> names) in context.binder().Select(
+                ctx =>
+                    (
+                        AtomicType.FromString(ctx.GetChild(0).GetText()),
+                        ctx.IDENT().ToArray().Select(identContext => identContext.GetText()).ToList()
+                    )))
             {
-                if (vars.ContainsKey(name))
-                    throw new ParsingException(context, $"duplicate quantified variable {name}");
-                QuantifiedVariable variable = new QuantifiedVariable
+                foreach (String name in names)
                 {
-                    name = counter.GetVariable(name),
-                    type = type
-                };
-                symbolTables.Peek().Add(name, variable);
-                vars.Add(name, variable);
+                    if (vars.ContainsKey(name))
+                        throw new ParsingException(context, $"duplicate quantified variable {name}");
+                    QuantifiedVariable variable = new QuantifiedVariable
+                    {
+                        name = counter.GetVariable(name),
+                        type = type
+                    };
+                    symbolTables.Peek().Add(name, variable);
+                    vars.Add(name, variable);
+                }
             }
 
             Expression expression = TypeConfirm(context.pred(), BoolType.Get());

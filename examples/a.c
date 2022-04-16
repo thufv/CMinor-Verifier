@@ -1,10 +1,8 @@
-#include<stdio.h>
+//@ predicate sorted(integer a[]) = \forall integer i; 0 <= i < \length(a) - 1 ==> a[i] <= a[i + 1];
 
-int main() {
-    int i = 0;
-    for (; i < 10; ++i) {
-        if (i == 1) {
-            continue;
-        }
-    }
+/*@
+   requires sorted(a);
+ */
+int search(int a[], int x) {
+    return 0;
 }
