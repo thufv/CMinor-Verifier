@@ -366,7 +366,7 @@ namespace cminor
         public DivExpression(Expression le, Expression re)
         {
             Debug.Assert(le.type is FloatType && re.type is FloatType || le.type is IntType && re.type is IntType);
-            this.type = FloatType.Get();
+            this.type = le.type;
             this.le = le;
             this.re = re;
         }

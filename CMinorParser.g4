@@ -96,27 +96,32 @@ logicConstant:
 	| '\\true'
 	| '\\false';
 
-term:
+arithTerm:
 	IDENT											# IdentTerm
 	| '\\result'									# ResTerm
 	| logicConstant									# ConstTerm
-	| '\\length' '(' term ')'						# LengthTerm
+	| '\\length' '(' arithTerm ')'					# LengthTerm
 	| '(' term ')'									# ParTerm
 	| '{' term '\\with' '[' term ']' '=' term '}'	# ArrUpdTerm
-	| term '[' term ']'								# ArrAccessTerm
-	| term '.' IDENT								# MemTerm
-	| ('!' | '-') term								# UnaryTerm
-	| term ('*' | '/' | '%') term					# MulTerm
-	| term ('+' | '-') term							# AddTerm
-	| term ('<' | '<=' | '>' | '>=') term			# OrdTerm
-	| term ('==' | '!=') term						# EquTerm
-	| term '&&' term								# AndTerm
-	| term '||' term								# OrTerm;
+	| arithTerm '[' term ']'						# ArrAccessTerm
+	| arithTerm '.' IDENT							# MemTerm
+	| ('-' | '!') term								# UnaryTerm
+	| arithTerm ('*' | '/' | '%') arithTerm			# MulTerm
+	| arithTerm ('+' | '-') arithTerm				# AddTerm;
+
+term:
+	arithTerm								# AriTerm
+	| term ('<' | '<=' | '>' | '>=') term	# OrdTerm
+	| term ('==' | '!=') term				# EquTerm
+	| term '&&' term						# AndTerm
+	| term '||' term						# OrTerm;
 
 pred:
-	'\\true'													# TruePred
-	| '\\false'													# FalsePred
-	| term (('<' | '<=' | '>' | '>=' | '==' | '!=') term)+		# CmpPred
+	'\\true'	# TruePred
+	| '\\false'	# FalsePred
+	| arithTerm (
+		('<' | '<=' | '>' | '>=' | '==' | '!=') arithTerm
+	)+															# CmpPred
 	| IDENT ('(' term (',' term)* ')')?							# CallPred
 	| '(' pred ')'												# ParPred
 	| pred '&&' pred											# ConPred
@@ -152,8 +157,12 @@ loopAnnot:
 	)? LINEEND;
 
 predDef:
-	'/*@' 'predicate' IDENT ('(' logicParaVar (',' logicParaVar)* ')')? '=' pred ';' '*/'
-	| '//@' 'predicate' IDENT ('(' logicParaVar (',' logicParaVar)* ')')? '=' pred ';' LINEEND;
+	'/*@' 'predicate' IDENT (
+		'(' logicParaVar (',' logicParaVar)* ')'
+	)? '=' pred ';' '*/'
+	| '//@' 'predicate' IDENT (
+		'(' logicParaVar (',' logicParaVar)* ')'
+	)? '=' pred ';' LINEEND;
 
 /* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';

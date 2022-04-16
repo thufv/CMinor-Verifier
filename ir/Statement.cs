@@ -41,7 +41,7 @@ namespace cminor
 
         public override void Print(TextWriter writer)
         {
-            writer.Write($"\t({variable.name}: {variable.type}) := ");
+            writer.Write($"\t({variable.name}: {variable.type}) = ");
             rhs.Print(writer);
             writer.Write("\n");
         }

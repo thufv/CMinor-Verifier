@@ -2,6 +2,6 @@
   requires \true;
   ensures \result <= a <= b;
  */
-bool cmp (bool a, bool b) {
+int cmp(int a, int b) {
     return 0;
 }

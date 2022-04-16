@@ -25,7 +25,7 @@ namespace cminor
             var exprs = new List<Expression>();
             for (int i = 0; i < context.ChildCount; i += 2)
             {
-                exprs.Add(NotNullConfirm(context.term()[i >> 1]));
+                exprs.Add(NotNullConfirm(context.arithTerm()[i >> 1]));
                 if (exprs.Last().type != exprs.First().type)
                     throw new ParsingException(context, $"The types of terms in CmpPred must be same, but there are {exprs.Last().type} and {exprs.First().type}.");
             }
@@ -34,10 +34,10 @@ namespace cminor
             for (int i = 1; i < context.ChildCount; i += 2)
                 ops.Add(context.GetChild(i).GetText());
             if (ops.Count > 1
-                && !(new HashSet<String>(ops)).IsSubsetOf(new HashSet<String> {"<", "<=", "=="})
-                && !(new HashSet<String>(ops)).IsSubsetOf(new HashSet<String> {">", ">=", "=="}))
+                && !(new HashSet<String>(ops)).IsSubsetOf(new HashSet<String> { "<", "<=", "==" })
+                && !(new HashSet<String>(ops)).IsSubsetOf(new HashSet<String> { ">", ">=", "==" }))
                 throw new ParsingException(context, $"The directions of operators are different: {ops}");
-            
+
             Expression e = BinaryExpression.FromOp(ops[0], exprs[0], exprs[1]);
             for (int i = 1; i < ops.Count; ++i)
                 e = new AndExpression(e, BinaryExpression.FromOp(ops[i], exprs[i], exprs[i + 1]));
@@ -49,7 +49,7 @@ namespace cminor
             string calledName = context.IDENT().GetText();
             if (LocalVariableExists(calledName))
                 throw new ParsingException(context, "call a variable that is neither function nor predicate.");
-            
+
             if (!predicateTable.ContainsKey(calledName))
                 throw new ParsingException(context, $"no predicate named '{calledName}'");
 
@@ -110,7 +110,7 @@ namespace cminor
             Expression e = new ImplicationExpression(le, re);
             return e;
         }
-        
+
         public override Expression VisitIffPred([NotNull] CMinorParser.IffPredContext context)
         {
             Expression le = TypeConfirm(context.pred()[0], BoolType.Get());

@@ -248,7 +248,8 @@ namespace cminor
                     re = CompressedExpression(re, counter.GetDivisor);
                     currentBlock.AddStatement(new AssertStatement()
                     {
-                        pred = new NEExpression(re, new FloatConstantExpression(0))
+                        pred = new NEExpression(re,
+                            le.type is IntType ? new IntConstantExpression(0): new FloatConstantExpression(0))
                     });
                     return new DivExpression(le, re);
                 case "%":

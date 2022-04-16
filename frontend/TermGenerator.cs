@@ -31,9 +31,9 @@ namespace cminor
 
         public override Expression VisitArrAccessTerm([NotNull] CMinorParser.ArrAccessTermContext context)
         {
-            Expression array = NotNullConfirm(context.term()[0]);
+            Expression array = NotNullConfirm(context.arithTerm());
 
-            Expression subscript = TypeConfirm(context.term()[1], IntType.Get());
+            Expression subscript = TypeConfirm(context.term(), IntType.Get());
             return new ArrayAccessExpression(array, subscript);
             
             throw new ParsingException(context, $"request for an element in a non-array expression.");
@@ -41,7 +41,7 @@ namespace cminor
 
         public override Expression VisitMemTerm([NotNull] CMinorParser.MemTermContext context)
         {
-            Expression structExpression = NotNullConfirm(context.term());
+            Expression structExpression = NotNullConfirm(context.arithTerm());
             string memberName = context.IDENT().GetText();
 
             // struct 只能是变量或者函数的返回值，
@@ -98,8 +98,8 @@ namespace cminor
 
         public override Expression VisitMulTerm([NotNull] CMinorParser.MulTermContext context)
         {
-            Expression le = NotNullConfirm(context.term()[0]);
-            Expression re = NotNullConfirm(context.term()[1]);
+            Expression le = NotNullConfirm(context.arithTerm()[0]);
+            Expression re = NotNullConfirm(context.arithTerm()[1]);
             string op = context.GetChild(1).GetText();
 
             switch (op)
@@ -125,8 +125,8 @@ namespace cminor
 
         public override Expression VisitAddTerm([NotNull] CMinorParser.AddTermContext context)
         {
-            Expression le = NotNullConfirm(context.term()[0]);
-            Expression re = NotNullConfirm(context.term()[1]);
+            Expression le = NotNullConfirm(context.arithTerm()[0]);
+            Expression re = NotNullConfirm(context.arithTerm()[1]);
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                 throw new ParsingException(context, "the type of expression between '+' or '-' must be both int or float.");
@@ -180,7 +180,7 @@ namespace cminor
 
         public override Expression VisitLengthTerm([NotNull] CMinorParser.LengthTermContext context)
         {
-            Expression arrayExpr = NotNullConfirm(context.term());
+            Expression arrayExpr = NotNullConfirm(context.arithTerm());
             if (arrayExpr.type is ArrayType)
                 return new LengthExpression(arrayExpr);
             else

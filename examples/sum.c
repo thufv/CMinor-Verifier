@@ -1,13 +1,13 @@
-/*@ requires n >= 0 && \valid(t+(0..n-1)) ;
-  @ ensures \result == \sum(0,n-1,\lambda integer k; t[k]);
+/*@ requires n >= 0;
+  @ decreases n + 1;
+  @ ensures \result == n * (n - 1) / 2;
   @*/
-double array_sum(double t[],int n) {
-  int i;
-  double s = 0.0;
+int sum(int n) {
+  int s = 0;
   /*@ loop invariant 0 <= i <= n;
-    @ loop invariant s == \sum(0,i-1,\lambda integer k; t[k]);
-    @ loop variant n-i;
+    @ loop invariant s == i * (i - 1) / 2;
+    @ loop variant n - i;
   */
-  for(i=0; i < n; i++) s += t[i];
+  for (int i = 0; i < n; i = i + 1) s = s + i;
   return s;
 }

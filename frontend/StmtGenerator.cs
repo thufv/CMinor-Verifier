@@ -164,7 +164,9 @@ namespace cminor
             currentBlock = loopheadBlock;
 
             // condition
-            Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
+            Expression condition = context.expr() == null
+                ? new BoolConstantExpression(true)
+                : CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
 
             // 开一个 body block
             BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);

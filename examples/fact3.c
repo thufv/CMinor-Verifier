@@ -1,4 +1,2 @@
-//@ decreases n
-    + 1;
-int fib(int n) {
-}
+//@ decreases n + 1;
+void fib(int n) { }
