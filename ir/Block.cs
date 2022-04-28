@@ -104,7 +104,7 @@ namespace cminor
             PrintPredecessors(writer);
 
             foreach (Expression condition in conditions)
-                PrintCondition(writer, "post", condition);
+                PrintCondition(writer, "ensures", condition);
         }
 
         public override string ToString() => $"_POSTCOND#{number}";
@@ -120,7 +120,7 @@ namespace cminor
 
         protected void PrintRankingFunction(TextWriter writer)
         {
-            writer.WriteLine("\t#rankingfunction (");
+            writer.Write("\t#rankingfunction (");
             if (rankingFunction != null)
             {
                 rankingFunction.Print(writer);
@@ -153,7 +153,7 @@ namespace cminor
             PrintSuccessors(writer);
 
             foreach (Expression cond in conditions)
-                PrintCondition(writer, "pre", cond);
+                PrintCondition(writer, "requires", cond);
 
             PrintRankingFunction(writer);
         }
@@ -188,7 +188,7 @@ namespace cminor
             PrintSuccessors(writer);
 
             foreach (Expression invariant in invariants)
-                PrintCondition(writer, "invariant", invariant);
+                PrintCondition(writer, "loop invariant", invariant);
 
             PrintRankingFunction(writer);
 

@@ -51,7 +51,10 @@ namespace cminor
 
         public void Print(TextWriter writer)
         {
-            writer.WriteLine($"[function] {type.returnTypes} {name} \n(");
+            writer.Write($"[function] (\\result: (");
+            foreach (Type returnType in type.returnTypes)
+                writer.Write(returnType);
+            writer.WriteLine($")) {name} \n(");
             for (int i = 0; i < parameters.Count; ++i)
                 writer.WriteLine($"\t({parameters[i].name}: {parameters[i].type}),");
             writer.WriteLine(")");

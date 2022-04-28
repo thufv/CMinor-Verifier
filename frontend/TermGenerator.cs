@@ -178,16 +178,6 @@ namespace cminor
             return e;
         }
 
-        public override Expression VisitLengthTerm([NotNull] CMinorParser.LengthTermContext context)
-        {
-            Debug.Assert(context.INT_CONSTANT().GetText() == "0");
-            Expression arrayExpr = NotNullConfirm(context.arithTerm());
-            if (arrayExpr.type is ArrayType)
-                return new LengthExpression(arrayExpr);
-            else
-                throw new ParsingException(context, "try calculating the length of a non-array expression.");
-        }
-
         public override Expression VisitArrUpdTerm([NotNull] CMinorParser.ArrUpdTermContext context)
         {
             Expression array = NotNullConfirm(context.term()[0]);

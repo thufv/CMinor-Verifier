@@ -134,6 +134,18 @@ namespace cminor
             return e;
         }
 
+        public override Expression VisitLengthPred([NotNull] CMinorParser.LengthPredContext context)
+        {
+            Debug.Assert(context.INT_CONSTANT().GetText() == "0");
+            LocalVariable variable = FindVariable(context, context.IDENT().GetText());
+            Expression length = TypeConfirm(context.arithTerm(), IntType.Get());
+            if (variable is ArrayVariable av)
+                // av.length > length
+                return new GTExpression(new VariableExpression(av.length), length);
+            else
+                throw new ParsingException(context, "try calculating the length of a non-array expression.");
+        }
+
         public override Expression VisitQuantiPred([NotNull] CMinorParser.QuantiPredContext context)
         {
             // 这里我们开一个新的作用域

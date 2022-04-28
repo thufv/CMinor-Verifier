@@ -45,10 +45,9 @@ namespace cminor
             // else-block
             BasicBlock elseBlock = new BasicBlock(currentFunction, prevBlock);
             currentBlock = elseBlock;
-            Expression notCondition = new NotExpression(conditionExpression);
             elseBlock.AddStatement(new AssumeStatement
             {
-                condition = notCondition
+                condition = new NotExpression(conditionExpression)
             });
             if (context.stmt().Length == 2)
             {
@@ -126,15 +125,17 @@ namespace cminor
 
         /* for ( var := init ; cond ; iter)
         
-           等价于
-          
-           {
-             var := init
-             while (cond) {
-               body
-               iter
-             }
-           }
+              [init]
+                |
+     ------[loop head]------
+     |          |          |
+   [exit]  [loop body]   [cont]
+     |          |          |
+     |          -----------|
+     |
+     -----------|
+                |
+               ...
         */
         public override Expression? VisitForStmt([NotNull] CMinorParser.ForStmtContext context)
         {
@@ -177,9 +178,13 @@ namespace cminor
                 condition = condition
             });
 
-            // iter block
+            // 访问 body
+            currentBlock = bodyBlock;
+            Visit(context.stmt());
+
+            // cont (iter) block
             Block? outerContBlock = contBlock;
-            contBlock = new BasicBlock(currentFunction, bodyBlock);
+            contBlock = new BasicBlock(currentFunction, currentBlock);
             Block.AddEdge(contBlock, loopheadBlock);
             currentBlock = contBlock;
             if (context.forIter() != null)
@@ -208,10 +213,6 @@ namespace cminor
             // 开一个新的 break block，接在 exit loop block 后面
             BasicBlock? outerBreakBlock = breakBlock;
             breakBlock = new BasicBlock(currentFunction, exitBlock);
-
-            // 访问 body
-            currentBlock = bodyBlock;
-            Visit(context.stmt());
 
             // 结束循环
             symbolTables.Pop();

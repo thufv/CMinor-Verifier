@@ -97,18 +97,16 @@ logicConstant:
 	| '\\false';
 
 arithTerm:
-	IDENT			# IdentTerm
-	| '\\result'	# ResTerm
-	| logicConstant	# ConstTerm
-	// 这里化简了 ACSL 中 location 和 tset 的概念 range 是个闭区间，其首尾的类型都只能是 integer
-	| '\\valid' '(' IDENT '+' '(' INT_CONSTANT '..' arithTerm ')' ')'	# LengthTerm
-	| '(' term ')'													# ParTerm
-	| '{' term '\\with' '[' term ']' '=' term '}'					# ArrUpdTerm
-	| arithTerm '[' term ']'										# ArrAccessTerm
-	| arithTerm '.' IDENT											# MemTerm
-	| ('-' | '!') term												# UnaryTerm
-	| arithTerm ('*' | '/' | '%') arithTerm							# MulTerm
-	| arithTerm ('+' | '-') arithTerm								# AddTerm;
+	IDENT											# IdentTerm
+	| '\\result'									# ResTerm
+	| logicConstant									# ConstTerm
+	| '(' term ')'									# ParTerm
+	| '{' term '\\with' '[' term ']' '=' term '}'	# ArrUpdTerm
+	| arithTerm '[' term ']'						# ArrAccessTerm
+	| arithTerm '.' IDENT							# MemTerm
+	| ('-' | '!') term								# UnaryTerm
+	| arithTerm ('*' | '/' | '%') arithTerm			# MulTerm
+	| arithTerm ('+' | '-') arithTerm				# AddTerm;
 
 term:
 	arithTerm								# AriTerm
@@ -122,16 +120,18 @@ pred:
 	| '\\false'	# FalsePred
 	| arithTerm (
 		('<' | '<=' | '>' | '>=' | '==' | '!=') arithTerm
-	)+															# CmpPred
-	| IDENT ('(' term (',' term)* ')')?							# CallPred
-	| '(' pred ')'												# ParPred
-	| pred '&&' pred											# ConPred
-	| pred '||' pred											# DisPred
-	| pred '==>' pred											# ImpPred
-	| pred '<==>' pred											# IffPred
-	| '!' pred													# NegPred
-	| pred '^^' pred											# XorPred
-	| ('\\forall' | '\\exists') binder (',' binder)* ';' pred	# QuantiPred;
+	)+									# CmpPred
+	| IDENT ('(' term (',' term)* ')')?	# CallPred
+	| '(' pred ')'						# ParPred
+	| pred '&&' pred					# ConPred
+	| pred '||' pred					# DisPred
+	| pred '==>' pred					# ImpPred
+	| pred '<==>' pred					# IffPred
+	| '!' pred							# NegPred
+	| pred '^^' pred					# XorPred
+	// 这里化简了 ACSL 中 location 和 tset 的概念 range 是个闭区间，其首尾的类型都只能是 integer
+	| '\\valid' '(' IDENT '+' '(' INT_CONSTANT '..' arithTerm ')' ')'	# LengthPred
+	| ('\\forall' | '\\exists') binder (',' binder)* ';' pred			# QuantiPred;
 
 binder: logicAtomicType IDENT (',' IDENT)*;
 
