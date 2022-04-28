@@ -2,12 +2,13 @@
 
 ### 重要
 
-- [ ] 修改文法
-- [ ] 支持 float
+- [x] 修改文法
+- [x] 支持 float
 - [ ] 测例
 - [ ] 重写 readme 和 taskdoc
 - [ ] API doc
-- [ ] 的
+- [ ] `valid`
+- [ ] do-while loop
 
 ### 不重要
 

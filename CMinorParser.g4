@@ -97,17 +97,18 @@ logicConstant:
 	| '\\false';
 
 arithTerm:
-	IDENT											# IdentTerm
-	| '\\result'									# ResTerm
-	| logicConstant									# ConstTerm
-	| '\\length' '(' arithTerm ')'					# LengthTerm
-	| '(' term ')'									# ParTerm
-	| '{' term '\\with' '[' term ']' '=' term '}'	# ArrUpdTerm
-	| arithTerm '[' term ']'						# ArrAccessTerm
-	| arithTerm '.' IDENT							# MemTerm
-	| ('-' | '!') term								# UnaryTerm
-	| arithTerm ('*' | '/' | '%') arithTerm			# MulTerm
-	| arithTerm ('+' | '-') arithTerm				# AddTerm;
+	IDENT			# IdentTerm
+	| '\\result'	# ResTerm
+	| logicConstant	# ConstTerm
+	// 这里化简了 ACSL 中 location 和 tset 的概念 range 是个闭区间，其首尾的类型都只能是 integer
+	| '\\valid' '(' IDENT '+' '(' INT_CONSTANT '..' arithTerm ')' ')'	# LengthTerm
+	| '(' term ')'													# ParTerm
+	| '{' term '\\with' '[' term ']' '=' term '}'					# ArrUpdTerm
+	| arithTerm '[' term ']'										# ArrAccessTerm
+	| arithTerm '.' IDENT											# MemTerm
+	| ('-' | '!') term												# UnaryTerm
+	| arithTerm ('*' | '/' | '%') arithTerm							# MulTerm
+	| arithTerm ('+' | '-') arithTerm								# AddTerm;
 
 term:
 	arithTerm								# AriTerm

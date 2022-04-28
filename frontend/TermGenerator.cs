@@ -180,6 +180,7 @@ namespace cminor
 
         public override Expression VisitLengthTerm([NotNull] CMinorParser.LengthTermContext context)
         {
+            Debug.Assert(context.INT_CONSTANT().GetText() == "0");
             Expression arrayExpr = NotNullConfirm(context.arithTerm());
             if (arrayExpr.type is ArrayType)
                 return new LengthExpression(arrayExpr);

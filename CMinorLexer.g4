@@ -83,6 +83,8 @@ LOOP: 'loop';
 INVARIANT: 'invariant';
 VARIANT: 'variant';
 PREDICATE: 'predicate';
+VALID: '\\valid';
+APOSTROPHE: '..';
 
 /* --- constants --- */
 INT_CONSTANT: [0-9]+;
