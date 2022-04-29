@@ -1,36 +1,10 @@
-## 计划
-
-### 重要
-
-- [x] 修改文法
-- [x] 支持 float
-- [ ] 测例
-- [ ] 重写 readme 和 taskdoc
-- [ ] API doc
-- [ ] `valid`
-- [ ] do-while loop
-
-### 不重要
-
-- [ ] logic function
-- [ ] visualizer
-- [ ] overflow/underflow checking: 或许可以留作作业？
-
-### 待实现的 ACSL
-
-- [ ] 2.2.4.3 overflow/underflow checking for quantified type.
-  - 诶……float 真的能做这个 check 嘛？
-- [ ] consecutive comparison operators
-- [ ] logic expression 里除数可能为 0 的问题 ACSL 是怎么解决的呢……没太看懂的样子qwq
-- [ ] global variable
-
 ## 简介
 
 这是清华版的 piVC (pi Verifying Compiler)，受 Stanford 的[同名项目](https://cs.stanford.edu/people/jasonaue/pivc/)启发所作。pi 是一个面向教学的验证中间语言，类似于带有验证标注的 C 语言的子集；piVC 即是 pi 这个语言的验证编译器。
 
 本次大作业你需要实现 piVC 中的核心验证算法部分，具体的说明请见 [任务说明文档](task-doc.md)。
 
-本项目使用 [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) 来集成公开测例仓库，在 clone 时你需要使用 `--recursive`。
+本项目使用 [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) 来集成公开测例仓库，在 clone 后请使用 `git submodule update --remote` 更新。
 
 ## 安装
 

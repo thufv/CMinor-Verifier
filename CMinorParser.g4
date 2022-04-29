@@ -10,8 +10,6 @@ options {
 
 @header {#pragma warning disable 3021}
 
-// TODO: logic function
-
 /* top level */
 main: def* EOF;
 

@@ -21,8 +21,5 @@ namespace cminor
         {
             z3Solver.definePredicate(predicate);
         }
-
-        // TODO: 这个有可能需要用其他的 SMT Solver 或者是低版本的 Z3，之后再说吧
-        // public List<Expression> interpolate(List<Expression> expressions) {}
     }
 }

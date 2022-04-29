@@ -141,12 +141,45 @@ namespace cminor
                                 Debug.Assert(le is ArithExpr);
                                 Debug.Assert(re is ArithExpr);
 
-                                return ctx.MkDiv((ArithExpr)le, (ArithExpr)re);
+                                //             5 / 3   5 / -3   -5 / -3   -5 / 3
+                                // C        :    1       -1        1        -1
+                                // Euclidean:    1       -1        2        -2
+
+                                //  le / re + (le > 0 ? 0: (re > 0 ? - 1: 1))
+                                return ctx.MkAdd(
+                                    ctx.MkDiv((IntExpr)le, (IntExpr)re),
+                                    (IntExpr)ctx.MkITE(
+                                        ctx.MkGt((IntExpr)le, ctx.MkInt(0)),
+                                        ctx.MkInt(0),
+                                        ctx.MkITE(
+                                            ctx.MkGt((IntExpr)re, ctx.MkInt(0)),
+                                            ctx.MkInt(-1),
+                                            ctx.MkInt(1)
+                                        )
+                                    )
+                                );
                             case ModExpression:
                                 Debug.Assert(le is IntExpr);
                                 Debug.Assert(re is IntExpr);
 
-                                return ctx.MkMod((IntExpr)le, (IntExpr)re);
+                                //             5 % 3    5 % -3   -5 % -3   -5 % 3
+                                // C        :    2        2        -2        -2
+                                // Euclidean:    2        2         1         1
+
+                                // le > 0 ? (re > 0 ? le % re: le % -re) : (re > 0 ? -(le % re): -(le % -re))
+                                return ctx.MkITE(
+                                    ctx.MkGt((IntExpr)le, ctx.MkInt(0)),
+                                    (IntExpr) ctx.MkITE(
+                                        ctx.MkGt((IntExpr)re, ctx.MkInt(0)),
+                                        ctx.MkMod((IntExpr)le, (IntExpr)re),
+                                        ctx.MkMod((IntExpr)le, (IntExpr)ctx.MkUnaryMinus((IntExpr)re))
+                                    ),
+                                    (IntExpr) ctx.MkITE(
+                                        ctx.MkGt((IntExpr)re, ctx.MkInt(0)),
+                                        ctx.MkUnaryMinus(ctx.MkMod((IntExpr)le, (IntExpr)re)),
+                                        ctx.MkUnaryMinus(ctx.MkMod((IntExpr)le, (IntExpr)ctx.MkUnaryMinus((IntExpr)re)))
+                                    )
+                                );
                             case AddExpression:
                                 Debug.Assert(le is ArithExpr);
                                 Debug.Assert(re is ArithExpr);
