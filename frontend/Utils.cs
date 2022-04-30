@@ -86,11 +86,12 @@ namespace cminor
             // 对于数组来说，在声明时我们会要求指定一个 literal 作为长度。
             if (context.INT_CONSTANT() != null)
             {
+                Debug.Assert(lv is ArrayVariable);
                 Debug.Assert(type is ArrayType);
 
                 currentBlock.AddStatement(new VariableAssignStatement
                 {
-                    variable = lv,
+                    variable = ((ArrayVariable)lv).length,
                     rhs = new IntConstantExpression(int.Parse(context.INT_CONSTANT().GetText()))
                 });
             }
