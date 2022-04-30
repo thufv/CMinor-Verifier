@@ -138,26 +138,35 @@ namespace cminor
                                     (ArithExpr)re
                                 });
                             case DivExpression:
-                                Debug.Assert(le is ArithExpr);
-                                Debug.Assert(re is ArithExpr);
+                                if (le is IntExpr li)
+                                {
+                                    if (re is IntExpr ri)
+                                    {
+                                        //             5 / 3   5 / -3   -5 / -3   -5 / 3
+                                        // C        :    1       -1        1        -1
+                                        // Euclidean:    1       -1        2        -2
 
-                                //             5 / 3   5 / -3   -5 / -3   -5 / 3
-                                // C        :    1       -1        1        -1
-                                // Euclidean:    1       -1        2        -2
-
-                                //  le / re + (le > 0 ? 0: (re > 0 ? - 1: 1))
-                                return ctx.MkAdd(
-                                    ctx.MkDiv((IntExpr)le, (IntExpr)re),
-                                    (IntExpr)ctx.MkITE(
-                                        ctx.MkGt((IntExpr)le, ctx.MkInt(0)),
-                                        ctx.MkInt(0),
-                                        ctx.MkITE(
-                                            ctx.MkGt((IntExpr)re, ctx.MkInt(0)),
-                                            ctx.MkInt(-1),
-                                            ctx.MkInt(1)
-                                        )
-                                    )
-                                );
+                                        //  (le div re) + (le > 0 ? 0: (re > 0 ? - 1: 1))
+                                        return ctx.MkAdd(
+                                            ctx.MkDiv(li, ri),
+                                            (IntExpr)ctx.MkITE(
+                                                ctx.MkGt(li, ctx.MkInt(0)),
+                                                ctx.MkInt(0),
+                                                ctx.MkITE(
+                                                    ctx.MkGt(ri, ctx.MkInt(0)),
+                                                    ctx.MkInt(-1),
+                                                    ctx.MkInt(1)
+                                                )
+                                            )
+                                        );
+                                    }
+                                }
+                                else {
+                                    if (le is RealExpr lr)
+                                        if (re is RealExpr rr)
+                                            return ctx.MkDiv(lr, rr);
+                                }
+                                throw new ArgumentException("The type between '/' must be both 'int' or both 'real'.");
                             case ModExpression:
                                 Debug.Assert(le is IntExpr);
                                 Debug.Assert(re is IntExpr);
@@ -166,7 +175,7 @@ namespace cminor
                                 // C        :    2        2        -2        -2
                                 // Euclidean:    2        2         1         1
 
-                                // le > 0 ? (re > 0 ? le % re: le % -re) : (re > 0 ? -(le % re): -(le % -re))
+                                // le > 0 ? (re > 0 ? (le mod re): (le mod -re) : (re > 0 ? -(le mod re): -(le mod -re))
                                 return ctx.MkITE(
                                     ctx.MkGt((IntExpr)le, ctx.MkInt(0)),
                                     (IntExpr) ctx.MkITE(
