@@ -178,6 +178,18 @@ namespace cminor
                 condition = condition
             });
 
+            // 开一个 exit loop block，其中其实只有一条 assume 语句
+            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
+            Expression notCondition = new NotExpression(condition);
+            exitBlock.AddStatement(new AssumeStatement
+            {
+                condition = notCondition
+            });
+
+            // 开一个新的 break block，接在 exit loop block 后面
+            BasicBlock? outerBreakBlock = breakBlock;
+            breakBlock = new BasicBlock(currentFunction, exitBlock);
+
             // 访问 body
             currentBlock = bodyBlock;
             Visit(context.stmt());
@@ -201,18 +213,6 @@ namespace cminor
                     Visit(context.forIter().assign());
                 }
             }
-
-            // 开一个 exit loop block，其中其实只有一条 assume 语句
-            BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Expression notCondition = new NotExpression(condition);
-            exitBlock.AddStatement(new AssumeStatement
-            {
-                condition = notCondition
-            });
-
-            // 开一个新的 break block，接在 exit loop block 后面
-            BasicBlock? outerBreakBlock = breakBlock;
-            breakBlock = new BasicBlock(currentFunction, exitBlock);
 
             // 结束循环
             symbolTables.Pop();
@@ -250,17 +250,17 @@ namespace cminor
             // 开一个 body block
             BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);
 
+            // 开一个 exit loop block
+            BasicBlock exitBlock = new BasicBlock(currentFunction, bodyBlock);
+
+            // 开一个 post loop block，接在 exit loop block 后面
+            BasicBlock? outerBreakBlock = breakBlock;
+            breakBlock = new BasicBlock(currentFunction, exitBlock);
+
             // 访问 body
             currentBlock = bodyBlock;
             Visit(context.stmt());
             Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
-
-            // 开一个 exit loop block，里面其实只有一条语句，就是 assume condition
-            BasicBlock exitBlock = new BasicBlock(currentFunction, bodyBlock);
-            exitBlock.AddStatement(new AssumeStatement
-            {
-                condition = new NotExpression(condition)
-            });
 
             // 就是不调 continue，正常执行地话，因为循环条件不满足，所以会走的 block
             BasicBlock normalContBlock = new BasicBlock(currentFunction, bodyBlock);
@@ -270,9 +270,11 @@ namespace cminor
             });
             Block.AddEdge(normalContBlock, loopheadBlock);
 
-            // 开一个 post loop block，接在 exit loop block 后面
-            BasicBlock? outerBreakBlock = breakBlock;
-            breakBlock = new BasicBlock(currentFunction, exitBlock);
+            // exit loop block 里面其实只有一条语句，就是 assume not condition
+            exitBlock.AddStatement(new AssumeStatement
+            {
+                condition = new NotExpression(condition)
+            });
 
             // 结束循环
             symbolTables.Pop();
