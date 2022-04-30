@@ -19,7 +19,7 @@ namespace cminor
         {
             [Option("source",
                 Required = true,
-                HelpText = "The source file of pi language (recommended with filename extension '.pi').")]
+                HelpText = "The source file of CMinor language (recommended with filename extension '.c').")]
             public string sourcePath { get; set; } = default!;
 
             [Option("printCFG",
