@@ -146,11 +146,14 @@ namespace cminor
                                         // C        :    1       -1        1        -1
                                         // Euclidean:    1       -1        2        -2
 
-                                        //  (le div re) + (le > 0 ? 0: (re > 0 ? - 1: 1))
+                                        //  (le div re) + (le >= 0 || le % re == 0 ? 0: (re > 0 ? - 1: 1))
                                         return ctx.MkAdd(
                                             ctx.MkDiv(li, ri),
                                             (IntExpr)ctx.MkITE(
-                                                ctx.MkGt(li, ctx.MkInt(0)),
+                                                ctx.MkOr(
+                                                    ctx.MkGe(li, ctx.MkInt(0)),
+                                                    ctx.MkEq(ctx.MkMod(li, ri), ctx.MkInt(0))
+                                                ),
                                                 ctx.MkInt(0),
                                                 ctx.MkITE(
                                                     ctx.MkGt(ri, ctx.MkInt(0)),

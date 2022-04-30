@@ -22,7 +22,7 @@ namespace cminor
             writer.WriteLine("*** COUNTER MODEL");
             foreach ((string name, string assignment) in assignments)
             {
-                writer.WriteLine($"{name} := {assignment}");
+                writer.WriteLine($"{name} = {assignment}");
             }
             writer.WriteLine("*** END COUNTER MODEL");
         }
