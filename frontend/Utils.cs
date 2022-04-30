@@ -80,7 +80,9 @@ namespace cminor
             Debug.Assert(currentBlock != null);
 
             string name = context.IDENT().Last().GetText();
-            VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);
+            VarType type = CalcType(context.children[
+                    context.children.IndexOf(context.IDENT().Last()) - 1
+                ].GetText(), context.ChildCount > 3);
             LocalVariable lv = CalcVar(context, name, type);
 
             // 对于数组来说，在声明时我们会要求指定一个 literal 作为长度。
@@ -102,20 +104,26 @@ namespace cminor
         LocalVariable CalcParaVar([NotNull] CMinorParser.ParaVarContext context)
         {
             string name = context.IDENT().Last().GetText();
-            VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);
+            VarType type = CalcType(context.children[
+                    context.children.IndexOf(context.IDENT().Last()) - 1
+                ].GetText(), context.ChildCount > 3);
             return CalcVar(context, name, type);
         }
 
         LocalVariable CalcLogicParaVar([NotNull] CMinorParser.LogicParaVarContext context)
         {
             string name = context.IDENT().Last().GetText();
-            VarType type = CalcType(context.GetChild(0).GetText(), context.ChildCount > 2);
+            VarType type = CalcType(context.children[
+                    context.children.IndexOf(context.IDENT().Last()) - 1
+                ].GetText(), context.ChildCount > 3);
             return CalcVar(context, name, type);
         }
 
         LocalVariable CalcRetVar([NotNull] CMinorParser.RetVarContext context)
         {
-            VarType type = CalcType(context.GetChild(0).GetText(), false);
+            VarType type = CalcType(context.children[
+                    context.children.IndexOf(context.IDENT().Last()) - 1
+                ].GetText(), false);
             return CalcVar(context, "\\result", type);
         }
 

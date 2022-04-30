@@ -31,9 +31,9 @@ namespace cminor
 
         public override Expression VisitArrAccessTerm([NotNull] CMinorParser.ArrAccessTermContext context)
         {
-            Expression array = NotNullConfirm(context.arithTerm());
+            Expression array = NotNullConfirm(context.arithTerm()[0]);
 
-            Expression subscript = TypeConfirm(context.term(), IntType.Get());
+            Expression subscript = TypeConfirm(context.arithTerm()[1], IntType.Get());
             return new ArrayAccessExpression(array, subscript);
             
             throw new ParsingException(context, $"request for an element in a non-array expression.");
@@ -77,7 +77,7 @@ namespace cminor
 
         public override Expression VisitUnaryTerm([NotNull] CMinorParser.UnaryTermContext context)
         {
-            Expression expression = NotNullConfirm(context.term());
+            Expression expression = NotNullConfirm(context.arithTerm());
             string op = context.GetChild(0).GetText();
             switch (op)
             {
@@ -87,7 +87,7 @@ namespace cminor
                     return new NotExpression(expression);
                 case "-":
                     if (!(expression.type is IntType || expression.type is FloatType))
-                        throw new ParsingException(context, "the type of expression just after '-' must be int or float.");
+                        throw new ParsingException(context, $"the type of expression just after '-' must be int or float, but {expression.type} is got.");
                     return new NegExpression(expression);
                 default:
                     throw new ArgumentException(
@@ -180,12 +180,12 @@ namespace cminor
 
         public override Expression VisitArrUpdTerm([NotNull] CMinorParser.ArrUpdTermContext context)
         {
-            Expression array = NotNullConfirm(context.term()[0]);
+            Expression array = NotNullConfirm(context.arithTerm()[0]);
             if (array.type is ArrayType at)
             {
                 Debug.Assert(currentBlock != null);
 
-                VariableExpression subscript = CompressedExpression(TypeConfirm(context.term()[1], IntType.Get()), counter.GetSub);
+                VariableExpression subscript = CompressedExpression(TypeConfirm(context.arithTerm()[1], IntType.Get()), counter.GetSub);
 
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
@@ -193,7 +193,7 @@ namespace cminor
                     pred = new LEExpression(new IntConstantExpression(0), subscript)
                 });
 
-                Expression rhs = TypeConfirm(context.term()[2], ((ArrayType)(array.type)).atomicType);
+                Expression rhs = TypeConfirm(context.arithTerm()[2], ((ArrayType)(array.type)).atomicType);
 
                 // runtime assertion: subscript < length
                 currentBlock.AddStatement(new AssertStatement()
@@ -221,9 +221,11 @@ namespace cminor
         public override Expression VisitLogicConstant([NotNull] CMinorParser.LogicConstantContext context)
         {
             if (context.INT_CONSTANT() != null)
-                return new IntConstantExpression(int.Parse(context.INT_CONSTANT().GetText()));
+                return new IntConstantExpression(
+                    int.Parse(context.INT_CONSTANT().GetText()));
             else if (context.FLOAT_CONSTANT() != null)
-                return new FloatConstantExpression(float.Parse(context.FLOAT_CONSTANT().GetText()));
+                return new FloatConstantExpression(
+                    float.Parse(context.FLOAT_CONSTANT().GetText()));
             else if (context.GetText() == "\\true")
                 return new BoolConstantExpression(true);
             else

@@ -26,15 +26,18 @@ structDef: 'struct' IDENT '{' (atomicType IDENT ';')* '}' ';';
 /* variable */
 localVar:
 	atomicType IDENT
-	| IDENT IDENT
+	| 'struct' IDENT IDENT
 	| atomicType IDENT '[' INT_CONSTANT ']';
 
 paraVar:
 	atomicType IDENT
-	| IDENT IDENT
+	| 'struct' IDENT IDENT
 	| atomicType IDENT '[' ']';
 
-retVar: atomicType IDENT | IDENT IDENT | 'void' IDENT;
+retVar:
+	atomicType IDENT
+	| 'struct' IDENT IDENT
+	| 'void' IDENT;
 
 atomicType: 'int' | 'float';
 
@@ -95,19 +98,19 @@ logicConstant:
 	| '\\false';
 
 arithTerm:
-	IDENT											# IdentTerm
-	| '\\result'									# ResTerm
-	| logicConstant									# ConstTerm
-	| '(' term ')'									# ParTerm
-	| '{' term '\\with' '[' term ']' '=' term '}'	# ArrUpdTerm
-	| arithTerm '[' term ']'						# ArrAccessTerm
-	| arithTerm '.' IDENT							# MemTerm
-	| ('-' | '!') term								# UnaryTerm
-	| arithTerm ('*' | '/' | '%') arithTerm			# MulTerm
-	| arithTerm ('+' | '-') arithTerm				# AddTerm;
+	IDENT															# IdentTerm
+	| '\\result'													# ResTerm
+	| logicConstant													# ConstTerm
+	| '{' arithTerm '\\with' '[' arithTerm ']' '=' arithTerm '}'	# ArrUpdTerm
+	| arithTerm '[' arithTerm ']'									# ArrAccessTerm
+	| arithTerm '.' IDENT											# MemTerm
+	| ('-' | '!') arithTerm											# UnaryTerm
+	| arithTerm ('*' | '/' | '%') arithTerm							# MulTerm
+	| arithTerm ('+' | '-') arithTerm								# AddTerm;
 
 term:
 	arithTerm								# AriTerm
+	| '(' term ')'							# ParTerm
 	| term ('<' | '<=' | '>' | '>=') term	# OrdTerm
 	| term ('==' | '!=') term				# EquTerm
 	| term '&&' term						# AndTerm
