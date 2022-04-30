@@ -208,11 +208,11 @@ namespace cminor
 
             // 如果一个 condition 不是只有一个变量组成的，
             // 那么我们需要为这个 condition 搞一个临时变量
-            // 这个临时变量的名字是：_condition${number}
+            // 这个临时变量的名字是：_cond${number}
             int conditionCounter = 0;
             public string GetCondition()
             {
-                return "_condition" + "$" + ++conditionCounter;
+                return "_cond" + "$" + ++conditionCounter;
             }
 
             // 我们也需要为每一个新数组搞一个临时变量：_array${number}

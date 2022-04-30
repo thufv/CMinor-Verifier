@@ -49,7 +49,7 @@ namespace cminor
         }
         protected void PrintCondition(TextWriter writer, string name, Expression condition)
         {
-            writer.Write($"\t@{name} ");
+            writer.Write($"\t{name} ");
             condition.Print(writer);
             writer.Write("\n");
         }
@@ -118,15 +118,7 @@ namespace cminor
         public HeadBlock(Function currentFunction, Block? predecessor)
             : base(currentFunction, predecessor) { }
 
-        protected void PrintRankingFunction(TextWriter writer)
-        {
-            writer.Write("\t#rankingfunction (");
-            if (rankingFunction != null)
-            {
-                rankingFunction.Print(writer);
-            }
-            writer.WriteLine(")");
-        }
+        abstract protected void PrintRankingFunction(TextWriter writer);
     }
 
     sealed class PreconditionBlock : HeadBlock
@@ -156,6 +148,16 @@ namespace cminor
                 PrintCondition(writer, "requires", cond);
 
             PrintRankingFunction(writer);
+        }
+
+        protected override void PrintRankingFunction(TextWriter writer)
+        {
+            writer.Write("\tdecreases ");
+            if (rankingFunction != null)
+            {
+                rankingFunction.Print(writer);
+            }
+            writer.WriteLine("");
         }
 
         public override string ToString() => $"_PRECOND#{number}";
@@ -193,6 +195,16 @@ namespace cminor
             PrintRankingFunction(writer);
 
             PrintStatements(writer);
+        }
+
+        protected override void PrintRankingFunction(TextWriter writer)
+        {
+            writer.Write("\tloop variant ");
+            if (rankingFunction != null)
+            {
+                rankingFunction.Print(writer);
+            }
+            writer.WriteLine("");
         }
 
         public override string ToString() => $"_LOOPHEAD#{number}";
