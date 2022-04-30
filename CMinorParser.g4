@@ -13,7 +13,7 @@ options {
 /* top level */
 main: def* EOF;
 
-def: funcDef | structDef | predDef;
+def: funcDef | structDef | predDefs;
 
 funcDef:
 	funcContract retVar '(' (paraVar (',' paraVar)*)? ')' '{' (
@@ -158,13 +158,14 @@ loopAnnot:
 		'loop' 'variant' term ';'
 	)? LINEEND;
 
+predDefs:
+	'/*@' predDef* '*/'
+	| '//@' predDef* LINEEND;
+
 predDef:
-	'/*@' 'predicate' IDENT (
+	'predicate' IDENT (
 		'(' logicParaVar (',' logicParaVar)* ')'
-	)? '=' pred ';' '*/'
-	| '//@' 'predicate' IDENT (
-		'(' logicParaVar (',' logicParaVar)* ')'
-	)? '=' pred ';' LINEEND;
+	)? '=' pred ';';
 
 /* miscellaneous */
 constant: INT_CONSTANT | FLOAT_CONSTANT | 'true' | 'false';
