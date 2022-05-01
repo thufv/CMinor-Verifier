@@ -141,7 +141,7 @@ namespace cminor
             Expression length = TypeConfirm(context.arithTerm(), false, IntType.Get());
             if (variable is ArrayVariable av)
                 // av.length > length
-                return new GTExpression(new VariableExpression(av.length), length);
+                return new GTExpression(new LengthExpression(new VariableExpression(av)), length);
             else
                 throw new ParsingException(context, "try calculating the length of a non-array expression.");
         }
