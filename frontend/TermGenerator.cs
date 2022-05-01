@@ -24,6 +24,11 @@ namespace cminor
             return NotNullConfirm(context.logicConstant());
         }
 
+        public override Expression? VisitParArithTerm([NotNull] CMinorParser.ParArithTermContext context)
+        {
+            return Visit(context.arithTerm());
+        }
+
         public override Expression? VisitParTerm([NotNull] CMinorParser.ParTermContext context)
         {
             return Visit(context.term());

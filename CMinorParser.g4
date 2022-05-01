@@ -102,6 +102,7 @@ arithTerm:
 	| '\\result'													# ResTerm
 	| logicConstant													# ConstTerm
 	| '{' arithTerm '\\with' '[' arithTerm ']' '=' arithTerm '}'	# ArrUpdTerm
+	| '(' arithTerm ')'												# ParArithTerm
 	| arithTerm '[' arithTerm ']'									# ArrAccessTerm
 	| arithTerm '.' IDENT											# MemTerm
 	| ('-' | '!') arithTerm											# UnaryTerm
