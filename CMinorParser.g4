@@ -43,7 +43,7 @@ atomicType: 'int' | 'float';
 
 logicParaVar:
 	logicAtomicType IDENT
-	| IDENT IDENT
+	| 'struct' IDENT IDENT
 	| logicAtomicType '[' ']' IDENT;
 
 logicAtomicType: 'integer' | 'real' | 'boolean';
