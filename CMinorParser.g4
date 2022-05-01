@@ -143,7 +143,8 @@ funcContract:
 
 requiresClause: 'requires' pred ';';
 
-decreasesClause: 'decreases' term ';';
+decreasesClause:
+	'decreases' (arithTerm | '(' arithTerm (',' arithTerm)+ ')') ';';
 
 ensuresClause: 'ensures' pred ';';
 
@@ -153,10 +154,10 @@ assertion:
 
 loopAnnot:
 	'/*@' ('loop' 'invariant' pred ';')* (
-		'loop' 'variant' term ';'
+		'loop' 'variant' (arithTerm | '(' arithTerm (',' arithTerm)+ ')') ';'
 	)? '*/'
 	| '//@' ('loop' 'invariant' pred ';')* (
-		'loop' 'variant' term ';'
+		'loop' 'variant' (arithTerm | '(' arithTerm (',' arithTerm)+ ')') ';'
 	)? LINEEND;
 
 predDefs:

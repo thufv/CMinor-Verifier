@@ -26,16 +26,16 @@ namespace cminor
         PreconditionBlock 
         CalcPreconditionBlock([NotNull] CMinorParser.RequiresClauseContext[] requiresClauseContexts, CMinorParser.DecreasesClauseContext decreasesClauseContext)
         {
-            List<Expression> conditions = new List<Expression>(requiresClauseContexts.Select(
-                ctx => TypeConfirm(ctx.pred(), false, BoolType.Get())));
-            Expression? rankingFunction =
-                decreasesClauseContext != null
-                    ? TypeConfirm(decreasesClauseContext.term(), false, IntType.Get())
-                    : null;
+            List<Expression> conditions = new List<Expression>(
+                    requiresClauseContexts.Select(
+                        ctx => TypeConfirm(ctx.pred(), false, BoolType.Get())));
+            List<Expression> rankingFunctions = new List<Expression>(
+                    decreasesClauseContext.arithTerm().Select(
+                        arithTerm => TypeConfirm(arithTerm, false, IntType.Get())));
             return new PreconditionBlock
             {
                 conditions = conditions,
-                rankingFunction = rankingFunction
+                rankingFunctions = rankingFunctions
             };
         }
 
@@ -44,16 +44,16 @@ namespace cminor
             Debug.Assert(currentFunction != null);
             Debug.Assert(currentBlock != null);
 
-            List<Expression> invariants = new List<Expression>(context.pred().Select(
-                invariant => TypeConfirm(invariant, false, BoolType.Get())));
-            Expression? rankingFunction =
-                context.term() != null
-                    ? TypeConfirm(context.term(), false, IntType.Get())
-                    : null;
+            List<Expression> invariants = new List<Expression>(
+                context.pred().Select(
+                    invariant => TypeConfirm(invariant, false, BoolType.Get())));
+            List<Expression> rankingFunctions = new List<Expression>(
+                context.arithTerm().Select(
+                    arithTerm => TypeConfirm(arithTerm, false, IntType.Get())));
             return new LoopHeadBlock(currentFunction, currentBlock)
             {
                 invariants = invariants,
-                rankingFunction = rankingFunction
+                rankingFunctions = rankingFunctions
             };
         }
 

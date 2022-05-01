@@ -112,7 +112,7 @@ namespace cminor
 
     abstract class HeadBlock : Block
     {
-        public Expression? rankingFunction = null;
+        public List<Expression> rankingFunctions = new List<Expression>();
 
         public HeadBlock() { }
         public HeadBlock(Function currentFunction, Block? predecessor)
@@ -152,12 +152,14 @@ namespace cminor
 
         protected override void PrintRankingFunction(TextWriter writer)
         {
-            writer.Write("\tdecreases ");
-            if (rankingFunction != null)
+            writer.WriteLine("\tdecreases (");
+            foreach (Expression rankingFunction in rankingFunctions)
             {
+                writer.Write("\t");
                 rankingFunction.Print(writer);
+                writer.WriteLine("");
             }
-            writer.WriteLine("");
+            writer.WriteLine(")");
         }
 
         public override string ToString() => $"_PRECOND#{number}";
@@ -199,10 +201,12 @@ namespace cminor
 
         protected override void PrintRankingFunction(TextWriter writer)
         {
-            writer.Write("\tloop variant ");
-            if (rankingFunction != null)
+            writer.WriteLine("\tloop variant (");
+            foreach (Expression rankingFunction in rankingFunctions)
             {
+                writer.Write("\t");
                 rankingFunction.Print(writer);
+                writer.WriteLine("");
             }
             writer.WriteLine("");
         }
