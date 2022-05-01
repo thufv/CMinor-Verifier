@@ -63,7 +63,7 @@ namespace cminor
             List<Expression> argumentExpressions = new List<Expression>();
             for (int i = 0; i < paraNum; ++i)
             {
-                Expression argumentExpression = TypeConfirm(context.term()[i], predicate.type.paraTypes[i]);
+                Expression argumentExpression = TypeConfirm(context.term()[i], false, predicate.type.paraTypes[i]);
                 if (argumentExpression.type is StructType)
                 {
                     Debug.Assert(argumentExpression is VariableExpression);
@@ -89,47 +89,47 @@ namespace cminor
 
         public override Expression VisitConPred([NotNull] CMinorParser.ConPredContext context)
         {
-            Expression le = TypeConfirm(context.pred()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.pred()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.pred()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.pred()[1], false, BoolType.Get());
             Expression e = new AndExpression(le, re);
             return e;
         }
 
         public override Expression VisitDisPred([NotNull] CMinorParser.DisPredContext context)
         {
-            Expression le = TypeConfirm(context.pred()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.pred()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.pred()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.pred()[1], false, BoolType.Get());
             Expression e = new OrExpression(le, re);
             return e;
         }
 
         public override Expression VisitImpPred([NotNull] CMinorParser.ImpPredContext context)
         {
-            Expression le = TypeConfirm(context.pred()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.pred()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.pred()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.pred()[1], false, BoolType.Get());
             Expression e = new ImplicationExpression(le, re);
             return e;
         }
 
         public override Expression VisitIffPred([NotNull] CMinorParser.IffPredContext context)
         {
-            Expression le = TypeConfirm(context.pred()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.pred()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.pred()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.pred()[1], false, BoolType.Get());
             Expression e = new IffExpression(le, re);
             return e;
         }
 
         public override Expression VisitNegPred([NotNull] CMinorParser.NegPredContext context)
         {
-            Expression expression = TypeConfirm(context.pred(), BoolType.Get());
+            Expression expression = TypeConfirm(context.pred(), false, BoolType.Get());
             Expression e = new NotExpression(expression);
             return e;
         }
 
         public override Expression VisitXorPred([NotNull] CMinorParser.XorPredContext context)
         {
-            Expression le = TypeConfirm(context.pred()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.pred()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.pred()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.pred()[1], false, BoolType.Get());
             Expression e = new XorExpression(le, re);
             return e;
         }
@@ -138,7 +138,7 @@ namespace cminor
         {
             Debug.Assert(context.INT_CONSTANT().GetText() == "0");
             LocalVariable variable = FindVariable(context, context.IDENT().GetText());
-            Expression length = TypeConfirm(context.arithTerm(), IntType.Get());
+            Expression length = TypeConfirm(context.arithTerm(), false, IntType.Get());
             if (variable is ArrayVariable av)
                 // av.length > length
                 return new GTExpression(new VariableExpression(av.length), length);
@@ -173,7 +173,7 @@ namespace cminor
                 }
             }
 
-            Expression expression = TypeConfirm(context.pred(), BoolType.Get());
+            Expression expression = TypeConfirm(context.pred(), false, BoolType.Get());
 
             symbolTables.Pop();
 

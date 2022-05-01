@@ -24,9 +24,8 @@ namespace cminor
             Debug.Assert(currentBlock != null);
             Debug.Assert(currentFunction != null);
 
-            // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量
-            // 作为 variable
-            Expression conditionExpression = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
+            // 先把 condition variable 算出来，如果是一个比较复杂的表达式的话，就加一个辅助变量作为 variable
+            Expression conditionExpression = CompressedExpression(TypeConfirm(context.expr(), true, BoolType.Get()), counter.GetCondition);
 
             Block prevBlock = currentBlock;
 
@@ -82,7 +81,7 @@ namespace cminor
             Block? outerContBlock = contBlock;
             contBlock = loopheadBlock;
 
-            Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
+            Expression condition = CompressedExpression(TypeConfirm(context.expr(), true, BoolType.Get()), counter.GetCondition);
 
             // 开一个新的作用域
             symbolTables.Push(new Dictionary<string, LocalVariable>());
@@ -96,10 +95,9 @@ namespace cminor
 
             // 开一个 exit loop block，里面其实只有一条语句，就是 assume notCondition
             BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Expression notCondition = new NotExpression(condition);
             exitBlock.AddStatement(new AssumeStatement
             {
-                condition = notCondition
+                condition = new NotExpression(condition)
             });
 
             // 开一个 post loop block，接在 exit loop block 后面
@@ -167,7 +165,7 @@ namespace cminor
             // condition
             Expression condition = context.expr() == null
                 ? new BoolConstantExpression(true)
-                : CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
+                : CompressedExpression(TypeConfirm(context.expr(), true, BoolType.Get()), counter.GetCondition);
 
             // 开一个 body block
             BasicBlock bodyBlock = new BasicBlock(currentFunction, loopheadBlock);
@@ -180,10 +178,9 @@ namespace cminor
 
             // 开一个 exit loop block，其中其实只有一条 assume 语句
             BasicBlock exitBlock = new BasicBlock(currentFunction, loopheadBlock);
-            Expression notCondition = new NotExpression(condition);
             exitBlock.AddStatement(new AssumeStatement
             {
-                condition = notCondition
+                condition = new NotExpression(condition)
             });
 
             // 开一个新的 break block，接在 exit loop block 后面
@@ -260,7 +257,7 @@ namespace cminor
             // 访问 body
             currentBlock = bodyBlock;
             Visit(context.stmt());
-            Expression condition = CompressedExpression(TypeConfirm(context.expr(), BoolType.Get()), counter.GetCondition);
+            Expression condition = CompressedExpression(TypeConfirm(context.expr(), true, BoolType.Get()), counter.GetCondition);
 
             // 就是不调 continue，正常执行地话，因为循环条件不满足，所以会走的 block
             BasicBlock normalContBlock = new BasicBlock(currentFunction, bodyBlock);
@@ -366,7 +363,7 @@ namespace cminor
             LocalVariable lv = FindVariable(context, context.IDENT().GetText());
             if (lv is ArrayVariable av)
             {
-                VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[0], IntType.Get()), counter.GetSub);
+                VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[0], true, IntType.Get()), counter.GetSub);
 
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
@@ -382,7 +379,7 @@ namespace cminor
                     });
                 }
 
-                Expression rhs = TypeConfirm(context.expr()[1], ((ArrayType)(av.type)).atomicType);
+                Expression rhs = TypeConfirm(context.expr()[1], true, ((ArrayType)(av.type)).atomicType);
 
                 currentBlock.AddStatement(new SubscriptAssignStatement
                 {
@@ -412,7 +409,7 @@ namespace cminor
                 LocalVariable variable = sv.members[memberName];
 
                 // 求出右边的表达式
-                Expression rhs = TypeConfirm(context.expr(), variable.type);
+                Expression rhs = TypeConfirm(context.expr(), true, variable.type);
 
                 // 把赋值语句加到基本块里
                 currentBlock.AddStatement(new VariableAssignStatement
@@ -432,7 +429,7 @@ namespace cminor
         {
             Debug.Assert(currentBlock != null);
 
-            Expression rhs = TypeConfirm(rhsContext, lhsVariable.type);
+            Expression rhs = TypeConfirm(rhsContext, true, lhsVariable.type);
 
             switch (rhs.type)
             {

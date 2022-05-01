@@ -33,7 +33,7 @@ namespace cminor
         {
             Expression array = NotNullConfirm(context.arithTerm()[0]);
 
-            Expression subscript = TypeConfirm(context.arithTerm()[1], IntType.Get());
+            Expression subscript = TypeConfirm(context.arithTerm()[1], false, IntType.Get());
             return new ArrayAccessExpression(array, subscript);
             
             throw new ParsingException(context, $"request for an element in a non-array expression.");
@@ -77,18 +77,19 @@ namespace cminor
 
         public override Expression VisitUnaryTerm([NotNull] CMinorParser.UnaryTermContext context)
         {
-            Expression expression = NotNullConfirm(context.arithTerm());
             string op = context.GetChild(0).GetText();
             switch (op)
             {
                 case "!":
-                    if (!(expression.type is BoolType))
-                        throw new ParsingException(context, "the type of expression just after '!' must be bool.");
+                {
+                    Expression expression = TypeConfirm(context.arithTerm(), false, BoolType.Get());
                     return new NotExpression(expression);
+                }
                 case "-":
-                    if (!(expression.type is IntType || expression.type is FloatType))
-                        throw new ParsingException(context, $"the type of expression just after '-' must be int or float, but {expression.type} is got.");
+                {
+                    Expression expression = TypeConfirm(context.arithTerm(), false, IntType.Get(), FloatType.Get());
                     return new NegExpression(expression);
+                }
                 default:
                     throw new ArgumentException(
                         message: $"operator '{op}' is neither '!' nor '-'. Probably a bug occurs.",
@@ -98,24 +99,34 @@ namespace cminor
 
         public override Expression VisitMulTerm([NotNull] CMinorParser.MulTermContext context)
         {
-            Expression le = NotNullConfirm(context.arithTerm()[0]);
-            Expression re = NotNullConfirm(context.arithTerm()[1]);
             string op = context.GetChild(1).GetText();
 
             switch (op)
             {
                 case "*":
+                {
+                    Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
+                    Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
                     if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                         throw new ParsingException(context, "the type of expression between '*' must be both 'int' or 'float'.");
                     return new MultiExpression(le, re);
+                }
                 case "/":
+                {
+                    Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
+                    Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
                     if (!(le.type is FloatType && re.type is FloatType || le.type is IntType && re.type is IntType))
                         throw new ParsingException(context, "the type of expression between '/' must be both 'float'.");
                     return new DivExpression(le, re);
+                }
                 case "%":
+                {
+                    Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get());
+                    Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get());
                     if (!(le.type is IntType && re.type is IntType))
                         throw new ParsingException(context, "the type of expression '%' must be both 'int'.");
                     return new ModExpression(le, re);
+                }
                 default:
                     throw new ArgumentException(
                         message: $"operator '{op}' is neither '*', '/', 'div' nor '%'. Probably a bug occurs.",
@@ -125,8 +136,8 @@ namespace cminor
 
         public override Expression VisitAddTerm([NotNull] CMinorParser.AddTermContext context)
         {
-            Expression le = NotNullConfirm(context.arithTerm()[0]);
-            Expression re = NotNullConfirm(context.arithTerm()[1]);
+            Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
+            Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                 throw new ParsingException(context, "the type of expression between '+' or '-' must be both int or float.");
@@ -138,8 +149,8 @@ namespace cminor
 
         public override Expression VisitOrdTerm([NotNull] CMinorParser.OrdTermContext context)
         {
-            Expression le = NotNullConfirm(context.term()[0]);
-            Expression re = NotNullConfirm(context.term()[1]);
+            Expression le = TypeConfirm(context.term()[0], false, IntType.Get(), FloatType.Get());
+            Expression re = TypeConfirm(context.term()[1], false, IntType.Get(), FloatType.Get());
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                 throw new ParsingException(context, $"the type of expression between inequality must be both int or float, while now they are '{le.type}' and '{re.type}'.");
@@ -164,16 +175,16 @@ namespace cminor
 
         public override Expression VisitAndTerm([NotNull] CMinorParser.AndTermContext context)
         {
-            Expression le = TypeConfirm(context.term()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.term()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.term()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.term()[1], false, BoolType.Get());
             Expression e = new AndExpression(le, re);
             return e;
         }
 
         public override Expression VisitOrTerm([NotNull] CMinorParser.OrTermContext context)
         {
-            Expression le = TypeConfirm(context.term()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.term()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.term()[0], false, BoolType.Get());
+            Expression re = TypeConfirm(context.term()[1], false, BoolType.Get());
             Expression e = new OrExpression(le, re);
             return e;
         }
@@ -185,7 +196,7 @@ namespace cminor
             {
                 Debug.Assert(currentBlock != null);
 
-                VariableExpression subscript = CompressedExpression(TypeConfirm(context.arithTerm()[1], IntType.Get()), counter.GetSub);
+                VariableExpression subscript = CompressedExpression(TypeConfirm(context.arithTerm()[1], false, IntType.Get()), counter.GetSub);
 
                 // runtime assertion: subscript >= 0
                 currentBlock.AddStatement(new AssertStatement()
@@ -193,7 +204,7 @@ namespace cminor
                     pred = new LEExpression(new IntConstantExpression(0), subscript)
                 });
 
-                Expression rhs = TypeConfirm(context.arithTerm()[2], ((ArrayType)(array.type)).atomicType);
+                Expression rhs = TypeConfirm(context.arithTerm()[2], false, ((ArrayType)(array.type)).atomicType);
 
                 // runtime assertion: subscript < length
                 currentBlock.AddStatement(new AssertStatement()

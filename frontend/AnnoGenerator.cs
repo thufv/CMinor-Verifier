@@ -13,7 +13,7 @@ namespace cminor
             Debug.Assert(currentBlock != null);
 
             // 尽管这里的类型应该是已经被 confirm 过一遍了，但多 confirm 一次是更加保险的选择
-            Expression pred = TypeConfirm(context.pred(), BoolType.Get());
+            Expression pred = TypeConfirm(context.pred(), false, BoolType.Get());
 
             currentBlock.AddStatement(new AssertStatement
             {
@@ -27,10 +27,10 @@ namespace cminor
         CalcPreconditionBlock([NotNull] CMinorParser.RequiresClauseContext[] requiresClauseContexts, CMinorParser.DecreasesClauseContext decreasesClauseContext)
         {
             List<Expression> conditions = new List<Expression>(requiresClauseContexts.Select(
-                ctx => TypeConfirm(ctx.pred(), BoolType.Get())));
+                ctx => TypeConfirm(ctx.pred(), false, BoolType.Get())));
             Expression? rankingFunction =
                 decreasesClauseContext != null
-                    ? TypeConfirm(decreasesClauseContext.term(), IntType.Get())
+                    ? TypeConfirm(decreasesClauseContext.term(), false, IntType.Get())
                     : null;
             return new PreconditionBlock
             {
@@ -45,10 +45,10 @@ namespace cminor
             Debug.Assert(currentBlock != null);
 
             List<Expression> invariants = new List<Expression>(context.pred().Select(
-                invariant => TypeConfirm(invariant, BoolType.Get())));
+                invariant => TypeConfirm(invariant, false, BoolType.Get())));
             Expression? rankingFunction =
                 context.term() != null
-                    ? TypeConfirm(context.term(), IntType.Get())
+                    ? TypeConfirm(context.term(), false, IntType.Get())
                     : null;
             return new LoopHeadBlock(currentFunction, currentBlock)
             {
@@ -59,12 +59,12 @@ namespace cminor
 
         PostconditionBlock CalcPostconditionBlock([NotNull] CMinorParser.EnsuresClauseContext[] contexts, List<LocalVariable> rvs)
         {
-            // 这里我们开一个只有 rv 的假作用域
+            // 这里我们开一个只有 \result 的假作用域
             var scope = rvs.ToDictionary(rv => rv.name, rv => rv);
             symbolTables.Push(scope);
 
             List<Expression> conditions = new List<Expression>(contexts.Select(
-                ctx => TypeConfirm(ctx.pred(), BoolType.Get())));
+                ctx => TypeConfirm(ctx.pred(), false, BoolType.Get())));
 
             symbolTables.Pop();
 

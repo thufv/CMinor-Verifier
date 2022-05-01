@@ -247,6 +247,48 @@ namespace cminor
         }
     }
 
+    sealed class ITEExpression : Expression
+    {
+        public Expression cond;
+        public Expression thenExpr, elseExpr;
+        
+        public ITEExpression(Expression cond, Expression thenExpr, Expression elseExpr)
+        {
+            Debug.Assert(cond.type is BoolType);
+            Debug.Assert(thenExpr.type == elseExpr.type);
+
+            this.cond = cond;
+            this.thenExpr = thenExpr;
+            this.elseExpr = elseExpr;
+            this.type = thenExpr.type;
+        }
+
+        public override void Print(TextWriter writer)
+        {
+            cond.Print(writer);
+            writer.Write(" ? ");
+            thenExpr.Print(writer);
+            writer.Write(" : ");
+            elseExpr.Print(writer);
+        }
+
+        public override Expression Substitute(LocalVariable s, Expression t)
+        {
+            Expression cond = this.cond.Substitute(s, t);
+            Expression thenExpr = this.thenExpr.Substitute(s, t);
+            Expression elseExpr = this.elseExpr.Substitute(s, t);
+            return new ITEExpression(cond, thenExpr, elseExpr);
+        }
+
+        public override HashSet<LocalVariable> GetFreeVariables()
+        {
+            var fvs = cond.GetFreeVariables();
+            fvs.UnionWith(thenExpr.GetFreeVariables());
+            fvs.UnionWith(elseExpr.GetFreeVariables());
+            return fvs;
+        }
+    }
+
     abstract class UnaryExpression : Expression
     {
         public Expression expression = default!;

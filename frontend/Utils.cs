@@ -127,14 +127,22 @@ namespace cminor
             return CalcVar(context, "\\result", type);
         }
 
-        Expression TypeConfirm([NotNull] ParserRuleContext context, Type intendedType)
+        Expression TypeConfirm([NotNull] ParserRuleContext context, bool boolAsInt, params Type[] intendedTypes)
         {
             Expression? expression = Visit(context);
             if (expression == null)
                 throw new ParsingException(context, $"try to use an expression of type 'void'.");
-            if (expression.type != intendedType)
-                throw new ParsingException(context, $"the expected type of the expression is '{intendedType}' while the actual type is '{expression.type}'.");
-            return expression;
+            foreach (Type intendedType in intendedTypes)
+                if (expression.type == intendedType)
+                    return expression;
+            if (boolAsInt)
+            {
+                if (expression.type is BoolType && intendedTypes.Contains(IntType.Get()))
+                    return new ITEExpression(expression, new IntConstantExpression(1), new IntConstantExpression(0));
+                if (expression.type is IntType && intendedTypes.Contains(BoolType.Get()))
+                    return new NEExpression(expression, new IntConstantExpression(0));
+            }
+            throw new ParsingException(context, $"the expected types of the expression are {intendedTypes}, while the actual type is '{expression.type}'.");
         }
 
         LocalVariable FindVariable([NotNull] ParserRuleContext context, string name)

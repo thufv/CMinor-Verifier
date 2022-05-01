@@ -44,7 +44,7 @@ namespace cminor
             List<LocalVariable> argumentVariables = new List<LocalVariable>();
             for (int i = 0; i < paraNum; ++i)
             {
-                Expression argumentExpression = TypeConfirm(context.expr()[i], function.type.paraTypes[i]);
+                Expression argumentExpression = TypeConfirm(context.expr()[i], true, function.type.paraTypes[i]);
                 if (argumentExpression is VariableExpression variableExpression)
                 {
                     // 如果参数是一个 struct 的话，就把它拍扁，每个成员作为一个参数
@@ -151,7 +151,7 @@ namespace cminor
 
             Debug.Assert(currentBlock != null);
 
-            VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[1], IntType.Get()), counter.GetSub);
+            VariableExpression subscript = CompressedExpression(TypeConfirm(context.expr()[1], true, IntType.Get()), counter.GetSub);
 
             // runtime assertion: subscript >= 0
             currentBlock.AddStatement(new AssertStatement()
@@ -209,18 +209,19 @@ namespace cminor
 
         public override Expression VisitUnaryExpr([NotNull] CMinorParser.UnaryExprContext context)
         {
-            Expression expression = NotNullConfirm(context.expr());
             string op = context.GetChild(0).GetText();
             switch (op)
             {
                 case "!":
-                    if (!(expression.type is BoolType))
-                        throw new ParsingException(context, "the type of expression just after '!' must be bool.");
+                {
+                    Expression expression = TypeConfirm(context.expr(), true, BoolType.Get());
                     return new NotExpression(expression);
+                }
                 case "-":
-                    if (!(expression.type is IntType || expression.type is FloatType))
-                        throw new ParsingException(context, "the type of expression just after '-' must be int or float.");
+                {
+                    Expression expression = TypeConfirm(context.expr(), true, IntType.Get(), FloatType.Get());
                     return new NegExpression(expression);
+                }
                 default:
                     throw new ArgumentException(
                         message: $"operator '{op}' is neither '!' nor '-'. Probably a bug occurs.",
@@ -230,17 +231,22 @@ namespace cminor
 
         public override Expression VisitMulExpr([NotNull] CMinorParser.MulExprContext context)
         {
-            Expression le = NotNullConfirm(context.expr()[0]);
-            Expression re = NotNullConfirm(context.expr()[1]);
             string op = context.GetChild(1).GetText();
 
             switch (op)
             {
                 case "*":
+                {
+                    Expression le = TypeConfirm(context.expr()[0], true, IntType.Get(), FloatType.Get());
+                    Expression re = TypeConfirm(context.expr()[1], true, IntType.Get(), FloatType.Get());
                     if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                         throw new ParsingException(context, "the type of expression between '*' must be both 'int' or 'float'.");
                     return new MultiExpression(le, re);
+                }
                 case "/":
+                {
+                    Expression le = TypeConfirm(context.expr()[0], true, IntType.Get(), FloatType.Get());
+                    Expression re = TypeConfirm(context.expr()[1], true, IntType.Get(), FloatType.Get());
                     if (!(le.type is FloatType && re.type is FloatType || le.type is IntType && re.type is IntType))
                         throw new ParsingException(context, "the type of expression between '/' must be both 'float'.");
                     
@@ -252,9 +258,11 @@ namespace cminor
                             le.type is IntType ? new IntConstantExpression(0): new FloatConstantExpression(0))
                     });
                     return new DivExpression(le, re);
+                }
                 case "%":
-                    if (!(le.type is IntType && re.type is IntType))
-                        throw new ParsingException(context, "the type of expression '%' must be both 'int'.");
+                {
+                    Expression le = TypeConfirm(context.expr()[0], true, IntType.Get());
+                    Expression re = TypeConfirm(context.expr()[1], true, IntType.Get());
                     
                     Debug.Assert(currentBlock != null);
                     re = CompressedExpression(re, counter.GetDivisor);
@@ -263,6 +271,7 @@ namespace cminor
                         pred = new NEExpression(re, new IntConstantExpression(0))
                     });
                     return new ModExpression(le, re);
+                }
                 default:
                     throw new ArgumentException(
                         message: $"operator '{op}' is neither '*', '/', 'div' nor '%'. Probably a bug occurs.",
@@ -272,8 +281,8 @@ namespace cminor
 
         public override Expression VisitAddExpr([NotNull] CMinorParser.AddExprContext context)
         {
-            Expression le = NotNullConfirm(context.expr()[0]);
-            Expression re = NotNullConfirm(context.expr()[1]);
+            Expression le = TypeConfirm(context.expr()[0], true, IntType.Get(), FloatType.Get());
+            Expression re = TypeConfirm(context.expr()[1], true, IntType.Get(), FloatType.Get());
             string op = context.GetChild(1).GetText();
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
@@ -294,8 +303,8 @@ namespace cminor
 
         public override Expression VisitOrdExpr([NotNull] CMinorParser.OrdExprContext context)
         {
-            Expression le = NotNullConfirm(context.expr()[0]);
-            Expression re = NotNullConfirm(context.expr()[1]);
+            Expression le = TypeConfirm(context.expr()[0], true, IntType.Get(), FloatType.Get());
+            Expression re = TypeConfirm(context.expr()[1], true, IntType.Get(), FloatType.Get());
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                 throw new ParsingException(context, $"the type of expression between inequality must be both int or float, while now they are '{le.type}' and '{re.type}'.");
@@ -310,6 +319,11 @@ namespace cminor
             Expression le = NotNullConfirm(context.expr()[0]);
             Expression re = NotNullConfirm(context.expr()[1]);
 
+            if (le.type is BoolType && re.type is IntType)
+                le = new ITEExpression(le, new IntConstantExpression(1), new IntConstantExpression(0));
+            else if (le.type is IntType && re.type is BoolType)
+                re = new ITEExpression(re, new IntConstantExpression(1), new IntConstantExpression(0));
+
             if (!(le.type is AtomicType && re.type is AtomicType && le.type == re.type))
                 throw new ParsingException(context, $"the type of expression between '=' or '!=' must be of same atomic type, while now they are '{le.type}' and '{re.type}'.");
 
@@ -320,16 +334,16 @@ namespace cminor
 
         public override Expression VisitAndExpr([NotNull] CMinorParser.AndExprContext context)
         {
-            Expression le = TypeConfirm(context.expr()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.expr()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.expr()[0], true, BoolType.Get());
+            Expression re = TypeConfirm(context.expr()[1], true, BoolType.Get());
             Expression e = new AndExpression(le, re);
             return e;
         }
 
         public override Expression VisitOrExpr([NotNull] CMinorParser.OrExprContext context)
         {
-            Expression le = TypeConfirm(context.expr()[0], BoolType.Get());
-            Expression re = TypeConfirm(context.expr()[1], BoolType.Get());
+            Expression le = TypeConfirm(context.expr()[0], true, BoolType.Get());
+            Expression re = TypeConfirm(context.expr()[1], true, BoolType.Get());
             Expression e = new OrExpression(le, re);
             return e;
         }

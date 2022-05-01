@@ -110,6 +110,16 @@ namespace cminor
 
                         return ctx.MkStore((ArrayExpr)array, subscript, rhs);
                     }
+                case ITEExpression itee:
+                    {
+                        Expr cond = ExpressionToZ3Expr(itee.cond);
+                        Expr thenExpr = ExpressionToZ3Expr(itee.thenExpr);
+                        Expr elseExpr = ExpressionToZ3Expr(itee.elseExpr);
+
+                        Debug.Assert(cond is BoolExpr);
+                        
+                        return ctx.MkITE((BoolExpr)cond, thenExpr, elseExpr);
+                    }
                 case NotExpression ne:
                     {
                         Expr expr = ExpressionToZ3Expr(ne.expression);
