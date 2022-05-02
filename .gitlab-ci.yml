@@ -26,7 +26,7 @@ prepare_data:
     - echo "Getting the latest test cases..."
     - if [ -d 'testcases' ]; then rm -r testcases; fi
     - git clone https://autojudger22:x7jLHuVeyDancsF46kXQ@git.tsinghua.edu.cn/software-verification-22/cminor-testcases.git
-    - mv pitc-thu testcases
+    - mv cminor-testcases testcases
     - ls testcases
     - echo "Latest test cases got."
 
