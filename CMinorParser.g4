@@ -43,7 +43,7 @@ atomicType: 'int' | 'float';
 
 logicParaVar:
 	logicAtomicType IDENT
-	| IDENT IDENT
+	| 'struct' IDENT IDENT
 	| logicAtomicType '[' ']' IDENT;
 
 logicAtomicType: 'integer' | 'real' | 'boolean';
@@ -102,6 +102,7 @@ arithTerm:
 	| '\\result'													# ResTerm
 	| logicConstant													# ConstTerm
 	| '{' arithTerm '\\with' '[' arithTerm ']' '=' arithTerm '}'	# ArrUpdTerm
+	| '(' arithTerm ')'												# ParArithTerm
 	| arithTerm '[' arithTerm ']'									# ArrAccessTerm
 	| arithTerm '.' IDENT											# MemTerm
 	| ('-' | '!') arithTerm											# UnaryTerm
@@ -142,7 +143,8 @@ funcContract:
 
 requiresClause: 'requires' pred ';';
 
-decreasesClause: 'decreases' term ';';
+decreasesClause:
+	'decreases' (arithTerm | '(' arithTerm (',' arithTerm)+ ')') ';';
 
 ensuresClause: 'ensures' pred ';';
 
@@ -152,10 +154,10 @@ assertion:
 
 loopAnnot:
 	'/*@' ('loop' 'invariant' pred ';')* (
-		'loop' 'variant' term ';'
+		'loop' 'variant' (arithTerm | '(' arithTerm (',' arithTerm)+ ')') ';'
 	)? '*/'
 	| '//@' ('loop' 'invariant' pred ';')* (
-		'loop' 'variant' term ';'
+		'loop' 'variant' (arithTerm | '(' arithTerm (',' arithTerm)+ ')') ';'
 	)? LINEEND;
 
 predDefs:

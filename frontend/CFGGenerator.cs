@@ -42,17 +42,17 @@ namespace cminor
             main = new IRMain();
             Visit(context);
 
-            // 这里我们做一个检查（约定）：ranking function 要么在每个函数头和循环头都有，要么都没有。
-            int rankingFunctionExists = -1; // -1 means unkown, 0 means non-existence, 1 means existence
+            // 这里我们做一个检查（约定）：ranking function 的数量在每个函数头和循环头都是相等的。
+            int rankingFunctionNum = -1; // -1 means unkown, 0 means non-existence, 1 means existence
             foreach (Function function in functionTable.Values)
             {
-                if (rankingFunctionExists == -1)
-                    rankingFunctionExists = function.preconditionBlock.rankingFunction != null ? 1 : 0;
-                if (rankingFunctionExists != (function.preconditionBlock.rankingFunction != null ? 1 : 0))
+                if (rankingFunctionNum == -1)
+                    rankingFunctionNum = function.preconditionBlock.rankingFunctions.Count;
+                if (rankingFunctionNum != function.preconditionBlock.rankingFunctions.Count)
                     throw new ParsingException(context, "Ranking functions should exist in all function contracts and loopheads, or not exist in all function contracts and loopheads.");
                 foreach (Block block in function.blocks)
                     if (block is LoopHeadBlock lhb)
-                        if (rankingFunctionExists != (function.preconditionBlock.rankingFunction != null ? 1 : 0))
+                        if (rankingFunctionNum != function.preconditionBlock.rankingFunctions.Count)
                             throw new ParsingException(context, "Ranking functions should exist in all function contracts and loopheads, or not exist in all function contracts and loopheads.");
             }
 

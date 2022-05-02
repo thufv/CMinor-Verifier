@@ -6,7 +6,7 @@ namespace cminor
     class BasicPath
     {
         public List<Expression> headConditions = new List<Expression>();
-        public Expression? headRankingFunction = default;
+        public List<Expression> headRankingFunctions = new List<Expression>();
 
         // only assumement, assignment are allowed
         public List<Statement> statements = new List<Statement>();
@@ -14,7 +14,7 @@ namespace cminor
         public List<Expression> tailConditions = new List<Expression>();
 
         // null 表示没有啦
-        public Expression? tailRankingFunction = null;
+        public List<Expression> tailRankingFunctions = new List<Expression>();
 
         [ContractInvariantMethod]
         void ObjectInvariant()

@@ -80,9 +80,10 @@ namespace cminor
             Debug.Assert(currentBlock != null);
 
             string name = context.IDENT().Last().GetText();
-            VarType type = CalcType(context.children[
-                    context.children.IndexOf(context.IDENT().Last()) - 1
-                ].GetText(), context.ChildCount > 3);
+            VarType type = CalcType(context.IDENT().Length > 1
+                ? context.IDENT()[0].GetText()  // struct type
+                : context.GetChild(0).GetText() // other types
+            , context.ChildCount > 3);
             LocalVariable lv = CalcVar(context, name, type);
 
             // 对于数组来说，在声明时我们会要求指定一个 literal 作为长度。
@@ -104,37 +105,48 @@ namespace cminor
         LocalVariable CalcParaVar([NotNull] CMinorParser.ParaVarContext context)
         {
             string name = context.IDENT().Last().GetText();
-            VarType type = CalcType(context.children[
-                    context.children.IndexOf(context.IDENT().Last()) - 1
-                ].GetText(), context.ChildCount > 3);
+            VarType type = CalcType(context.IDENT().Length > 1
+                ? context.IDENT()[0].GetText()  // struct type
+                : context.GetChild(0).GetText() // other types
+            , context.ChildCount > 3);
             return CalcVar(context, name, type);
         }
 
         LocalVariable CalcLogicParaVar([NotNull] CMinorParser.LogicParaVarContext context)
         {
             string name = context.IDENT().Last().GetText();
-            VarType type = CalcType(context.children[
-                    context.children.IndexOf(context.IDENT().Last()) - 1
-                ].GetText(), context.ChildCount > 3);
+            VarType type = CalcType(context.IDENT().Length > 1
+                ? context.IDENT()[0].GetText()  // struct type
+                : context.GetChild(0).GetText() // other types
+            , context.ChildCount > 3);
             return CalcVar(context, name, type);
         }
 
         LocalVariable CalcRetVar([NotNull] CMinorParser.RetVarContext context)
         {
-            VarType type = CalcType(context.children[
-                    context.children.IndexOf(context.IDENT().Last()) - 1
-                ].GetText(), false);
+            VarType type = CalcType(context.IDENT().Length > 1
+                ? context.IDENT()[0].GetText()  // struct type
+                : context.GetChild(0).GetText() // other types
+            , false);
             return CalcVar(context, "\\result", type);
         }
 
-        Expression TypeConfirm([NotNull] ParserRuleContext context, Type intendedType)
+        Expression TypeConfirm([NotNull] ParserRuleContext context, bool boolAsInt, params Type[] intendedTypes)
         {
             Expression? expression = Visit(context);
             if (expression == null)
                 throw new ParsingException(context, $"try to use an expression of type 'void'.");
-            if (expression.type != intendedType)
-                throw new ParsingException(context, $"the expected type of the expression is '{intendedType}' while the actual type is '{expression.type}'.");
-            return expression;
+            foreach (Type intendedType in intendedTypes)
+                if (expression.type == intendedType)
+                    return expression;
+            if (boolAsInt)
+            {
+                if (expression.type is BoolType && intendedTypes.Contains(IntType.Get()))
+                    return new ITEExpression(expression, new IntConstantExpression(1), new IntConstantExpression(0));
+                if (expression.type is IntType && intendedTypes.Contains(BoolType.Get()))
+                    return new NEExpression(expression, new IntConstantExpression(0));
+            }
+            throw new ParsingException(context, $"the expected types of the expression are {intendedTypes}, while the actual type is '{expression.type}'.");
         }
 
         LocalVariable FindVariable([NotNull] ParserRuleContext context, string name)

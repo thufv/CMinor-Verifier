@@ -13,7 +13,7 @@ namespace cminor
             Debug.Assert(currentBlock != null);
 
             // 尽管这里的类型应该是已经被 confirm 过一遍了，但多 confirm 一次是更加保险的选择
-            Expression pred = TypeConfirm(context.pred(), BoolType.Get());
+            Expression pred = TypeConfirm(context.pred(), false, BoolType.Get());
 
             currentBlock.AddStatement(new AssertStatement
             {
@@ -24,18 +24,18 @@ namespace cminor
         }
 
         PreconditionBlock 
-        CalcPreconditionBlock([NotNull] CMinorParser.RequiresClauseContext[] requiresClauseContexts, CMinorParser.DecreasesClauseContext decreasesClauseContext)
+        CalcPreconditionBlock([NotNull] CMinorParser.RequiresClauseContext[] requiresClauseContexts, CMinorParser.DecreasesClauseContext? decreasesClauseContext)
         {
-            List<Expression> conditions = new List<Expression>(requiresClauseContexts.Select(
-                ctx => TypeConfirm(ctx.pred(), BoolType.Get())));
-            Expression? rankingFunction =
-                decreasesClauseContext != null
-                    ? TypeConfirm(decreasesClauseContext.term(), IntType.Get())
-                    : null;
+            List<Expression> conditions = requiresClauseContexts.Select(
+                        ctx => TypeConfirm(ctx.pred(), false, BoolType.Get())).ToList();
+            List<Expression> rankingFunctions = decreasesClauseContext is null
+                ? new List<Expression>()
+                : decreasesClauseContext.arithTerm().Select(
+                        arithTerm => TypeConfirm(arithTerm, false, IntType.Get())).ToList();
             return new PreconditionBlock
             {
                 conditions = conditions,
-                rankingFunction = rankingFunction
+                rankingFunctions = rankingFunctions
             };
         }
 
@@ -44,27 +44,27 @@ namespace cminor
             Debug.Assert(currentFunction != null);
             Debug.Assert(currentBlock != null);
 
-            List<Expression> invariants = new List<Expression>(context.pred().Select(
-                invariant => TypeConfirm(invariant, BoolType.Get())));
-            Expression? rankingFunction =
-                context.term() != null
-                    ? TypeConfirm(context.term(), IntType.Get())
-                    : null;
+            List<Expression> invariants = new List<Expression>(
+                context.pred().Select(
+                    invariant => TypeConfirm(invariant, false, BoolType.Get())));
+            List<Expression> rankingFunctions = new List<Expression>(
+                context.arithTerm().Select(
+                    arithTerm => TypeConfirm(arithTerm, false, IntType.Get())));
             return new LoopHeadBlock(currentFunction, currentBlock)
             {
                 invariants = invariants,
-                rankingFunction = rankingFunction
+                rankingFunctions = rankingFunctions
             };
         }
 
         PostconditionBlock CalcPostconditionBlock([NotNull] CMinorParser.EnsuresClauseContext[] contexts, List<LocalVariable> rvs)
         {
-            // 这里我们开一个只有 rv 的假作用域
+            // 这里我们开一个只有 \result 的假作用域
             var scope = rvs.ToDictionary(rv => rv.name, rv => rv);
             symbolTables.Push(scope);
 
             List<Expression> conditions = new List<Expression>(contexts.Select(
-                ctx => TypeConfirm(ctx.pred(), BoolType.Get())));
+                ctx => TypeConfirm(ctx.pred(), false, BoolType.Get())));
 
             symbolTables.Pop();
 
