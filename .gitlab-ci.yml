@@ -1,4 +1,4 @@
-image: pivcci
+image: autojudger22
 cache:
   key: "$CI_COMMIT_SHA"
   paths:
@@ -25,7 +25,7 @@ prepare_data:
     - echo "Test starts..."
     - echo "Getting the latest test cases..."
     - if [ -d 'testcases' ]; then rm -r testcases; fi
-    - git clone https://pivcci:nNwMMn8d6ozV_xy6RszB@git.tsinghua.edu.cn/software-verification-21/pitc-thu.git
+    - git clone https://autojudger22:x7jLHuVeyDancsF46kXQ@git.tsinghua.edu.cn/software-verification-21/pitc-thu.git
     - mv pitc-thu testcases
     - ls testcases
     - echo "Latest test cases got."
