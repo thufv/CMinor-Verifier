@@ -16,7 +16,8 @@ namespace cminor
             this.assignments = assignments;
         }
 
-        // 打印的头尾信息是尽量和 Boogie 保持一致的
+        /// <summary> 将这个反例模型打印出来。 </summary>
+        /// <remarks> 打印的头尾信息是尽量和 Boogie 保持一致的。 </remarks>
         public void Print(TextWriter writer)
         {
             writer.WriteLine("*** COUNTER MODEL");

@@ -5,7 +5,8 @@ using System.Diagnostics.Contracts;
 
 namespace cminor
 {
-    // 我们把 struct 相关的放在这里，因为它们不会出现在最后的 IR 里
+    /// <summary> 对 C 语言中的结构体的刻画 </summary>
+    /// <remarks> 我们把 struct 相关的放在前端这边，因为它们不会出现在最后的 IR 里。 </remarks>
     class Struct
     {
         public StructType type;
@@ -29,6 +30,7 @@ namespace cminor
         }
     }
 
+    /// <summary> 结构体类型 </summary>
     sealed class StructType : VarType
     {
         public Struct structDefinition;
@@ -55,6 +57,7 @@ namespace cminor
         }
     }
 
+    /// <summary> 结构体变量 </summary>
     class StructVariable : LocalVariable
     {
         public SortedDictionary<string, LocalVariable> members = new SortedDictionary<string, LocalVariable>();

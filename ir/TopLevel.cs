@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 namespace cminor
 {
+    /// <summary> IR 的最顶层，其中包含了若干函数定义和谓词定义。 </summary>
+
     class IRMain
     {
         public LinkedList<Function> functions = new LinkedList<Function>();
@@ -28,6 +30,7 @@ namespace cminor
     }
 
 
+    /// <summary> 函数的主体是若干个 block 构成的 CFG，入口块是 precondition block，出口块是 postcondition block。 </summary>
     class Function
     {
         // 注意，这个 type 在 CFG 中
@@ -70,6 +73,7 @@ namespace cminor
         }
     }
 
+    /// <summary> 谓词的主体就是一个逻辑表达式。 </summary>
     class Predicate
     {
         // a predicate can be regarded as a function,

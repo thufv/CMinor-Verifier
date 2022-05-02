@@ -8,11 +8,33 @@ using Antlr4.Runtime.Tree;
 
 namespace cminor
 {
-    // 整个 frontend 其实都是 CFGGenerator 这一个 class，
-    // 由于 class 里的实现代码太大，为了方便组织，利用 C# 的 partial class 我们将其划分成了几个文件。
-    //
-    // 目前我们考虑的语言是没有 side effect 的。
-    // 这样的话，不少 C/C++ 里的 UB 在我们这里是不存在的，比如 `a[++i] = ++i;` 这种。
+    /**
+        <summary> 最顶层的 CFG 的生成器 </summary>
+        <remarks>
+        这里是生成最顶层的 CFG 的代码。
+
+        CFG 的生成过程是在 ANTLR 生成的 CST 上做单遍的遍历，这是一个 vistor pattern。
+        但为了让代码结构更清晰，这里我们通过 C# 的 partial class 特性，
+        把 CFGGenerator 的实现拆分进了七个文件中：
+        <list type="bullet">
+            <item> AnnoGenerator.cs：标注的生成 </item>
+            <item> CFGGenerator.cs：最顶层的函数定义、结构体定义、谓词定义等的生成 </item>
+            <item> DeclGenerator.cs：变量声明的生成 </item>
+            <item> ExprGenerator.cs：C 中表达式的生成 </item>
+            <item> PredGenerator.cs：标注中的谓词（逻辑表达式）的生成 </item>
+            <item> StmtGenerator.cs：语句的生成 </item>
+            <item> TermGenerator.cs：标注中的项（非逻辑表达式）的生成 </item>
+            <item> Utils.cs：一些工具函数和工具类 </item>
+        </list>
+        
+        注意：
+        <list type="bullet">
+            <item> 在生成的过程中，我们是有 struct 相关的东西的，但在最终的 IR 中我们会隐藏 struct； </item>
+            <item> 目前我们考虑的语言是没有 side effect 的，这样的话，
+            不少 C 里的 unspecified behavior/undefined behavior 在我们这里是不存在的，比如 <c>a[++i] = ++i;</c>。</item>
+        </list>
+        </remarks>
+    */
     partial class CFGGenerator : CMinorParserBaseVisitor<Expression?>
     {
         // 最终计算出来的 IR 主体

@@ -2,7 +2,7 @@
 
 这是一个 CMinor 的验证工具，是一个小型的教学版的 [Frama-C](https://frama-c.com/)。
 
-CMinor 是一个面向验证的教学语言，其包括源程序和验证标注两部分，其中源程序部分是 C 语言的子集，验证标注部分是 [ACSL (ANSI/ISO C Specification Language)](https://frama-c.com/html/acsl.html) 的子集。从 C 语言的角度来看，验证标注是写在注释中的，不会影响 C 代码通常的编译和运行。
+CMinor 是一个面向验证的教学语言，其包括源程序和验证标注两部分，其中源程序部分大致是 C 语言的子集，验证标注部分大致是 [ACSL (ANSI/ISO C Specification Language)](https://frama-c.com/html/acsl.html) 的子集。从 C 语言的角度来看，验证标注是写在注释中的，不会影响 C 代码通常的编译和运行。
 
 本次大作业你需要实现本工具中的核心验证算法部分，具体的说明请见[任务说明文档](task-doc.md)。
 
@@ -13,7 +13,7 @@ CMinor 是一个面向验证的教学语言，其包括源程序和验证标注�
 本项目依赖于 .NET 6，你可以从[这里](https://dotnet.microsoft.com/download)下载其最新的 SDK。
 
 你可以使用任意你喜欢的 IDE，我们推荐：
-- [Visual Studio 2019 (>= 16.8)](https://visualstudio.microsoft.com/zh-hans/)
+- [Visual Studio 2022 (>= 17.0.0)](https://visualstudio.microsoft.com/)：可以在安装的时候打包安装 .NET 的 SDK，不需要再单独下载
 - [Visual Studio Code](https://code.visualstudio.com/)：配合 [C# 插件](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
 - [Rider](https://www.jetbrains.com/rider/)
 
@@ -60,9 +60,15 @@ dotnet run -- --source <path>
 
 你唯一被允许修改、并且你也必须要修改的文件是 `Verifier.cs`，你需要在其中实现演绎验证的算法主体。
 
+## API 文档
+
+API 文档在 `./api-doc/`，打开 `./api-doc/index.html` 即可浏览。
+
+如果想要更新 API 文档的话，可以下载 [doxygen](https://www.doxygen.nl/index.html)，并在本项目根目录下运行 `doxygen`。
+
 ## 参考
 
-CMinor 语言是以下语言标准的子集：
+CMinor 语言大致是以下语言标准的子集：
 
 - Standard C: [ISO/IEC 9899:2018, aka C17 or C18](https://web.archive.org/web/20181230041359if_/http://www.open-std.org/jtc1/sc22/wg14/www/abq/c17_updated_proposed_fdis.pdf)
 - ANSI/ISO C Speicication Language: [ACSL v1.17](https://frama-c.com/download/acsl-1.17.pdf)

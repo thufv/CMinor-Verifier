@@ -40,7 +40,7 @@ namespace cminor
 
             Expression subscript = TypeConfirm(context.arithTerm()[1], false, IntType.Get());
             return new ArrayAccessExpression(array, subscript);
-            
+
             throw new ParsingException(context, $"request for an element in a non-array expression.");
         }
 
@@ -86,15 +86,15 @@ namespace cminor
             switch (op)
             {
                 case "!":
-                {
-                    Expression expression = TypeConfirm(context.arithTerm(), false, BoolType.Get());
-                    return new NotExpression(expression);
-                }
+                    {
+                        Expression expression = TypeConfirm(context.arithTerm(), false, BoolType.Get());
+                        return new NotExpression(expression);
+                    }
                 case "-":
-                {
-                    Expression expression = TypeConfirm(context.arithTerm(), false, IntType.Get(), FloatType.Get());
-                    return new NegExpression(expression);
-                }
+                    {
+                        Expression expression = TypeConfirm(context.arithTerm(), false, IntType.Get(), FloatType.Get());
+                        return new NegExpression(expression);
+                    }
                 default:
                     throw new ArgumentException(
                         message: $"operator '{op}' is neither '!' nor '-'. Probably a bug occurs.",
@@ -109,29 +109,29 @@ namespace cminor
             switch (op)
             {
                 case "*":
-                {
-                    Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
-                    Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
-                    if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
-                        throw new ParsingException(context, "the type of expression between '*' must be both 'int' or 'float'.");
-                    return new MultiExpression(le, re);
-                }
+                    {
+                        Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
+                        Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
+                        if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
+                            throw new ParsingException(context, "the type of expression between '*' must be both 'int' or 'float'.");
+                        return new MultiExpression(le, re);
+                    }
                 case "/":
-                {
-                    Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
-                    Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
-                    if (!(le.type is FloatType && re.type is FloatType || le.type is IntType && re.type is IntType))
-                        throw new ParsingException(context, "the type of expression between '/' must be both 'float'.");
-                    return new DivExpression(le, re);
-                }
+                    {
+                        Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get(), FloatType.Get());
+                        Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get(), FloatType.Get());
+                        if (!(le.type is FloatType && re.type is FloatType || le.type is IntType && re.type is IntType))
+                            throw new ParsingException(context, "the type of expression between '/' must be both 'float'.");
+                        return new DivExpression(le, re);
+                    }
                 case "%":
-                {
-                    Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get());
-                    Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get());
-                    if (!(le.type is IntType && re.type is IntType))
-                        throw new ParsingException(context, "the type of expression '%' must be both 'int'.");
-                    return new ModExpression(le, re);
-                }
+                    {
+                        Expression le = TypeConfirm(context.arithTerm()[0], false, IntType.Get());
+                        Expression re = TypeConfirm(context.arithTerm()[1], false, IntType.Get());
+                        if (!(le.type is IntType && re.type is IntType))
+                            throw new ParsingException(context, "the type of expression '%' must be both 'int'.");
+                        return new ModExpression(le, re);
+                    }
                 default:
                     throw new ArgumentException(
                         message: $"operator '{op}' is neither '*', '/', 'div' nor '%'. Probably a bug occurs.",
@@ -146,7 +146,7 @@ namespace cminor
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                 throw new ParsingException(context, "the type of expression between '+' or '-' must be both int or float.");
-            
+
             string op = context.GetChild(1).GetText();
             Expression e = BinaryExpression.FromOp(op, le, re);
             return e;
@@ -159,7 +159,7 @@ namespace cminor
 
             if (!(le.type is IntType && re.type is IntType || le.type is FloatType && re.type is FloatType))
                 throw new ParsingException(context, $"the type of expression between inequality must be both int or float, while now they are '{le.type}' and '{re.type}'.");
-            
+
             string op = context.GetChild(1).GetText();
             Expression e = BinaryExpression.FromOp(op, le, re);
             return e;

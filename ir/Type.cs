@@ -1,30 +1,44 @@
+/*
+    CMinor 的类型系统最核心的设计如下：
+
+    Type：最抽象的类型
+        VarType：变量类型
+            AtomicType：原子类型
+                IntType：整数类型
+                FloatType：浮点类型
+                BoolType：布尔类型（仅用于标注中）
+            ArrayType：数组类型，是一个复合类型，会带一个原子类型
+        FunType：函数类型，可以携带若干参数类型，并且返回若干参数类型（之所以允许返回多个，是因为我们会将结构体“拍扁”成“tuple”）
+        PredType：谓词类型，可以携带若干参数类型
+    
+    注意：在 CMinor 中不允许（隐式和显式的）类型转换
+*/
+
 using System;
 using System.Collections.Generic;
 
-/**
- * To be honest,
- * I really don't know how to design a type system...
- * There seems to be a lot other things that are needed to consider.
- */
-
 namespace cminor
 {
-    // 这里我们尝试拿 singleton design pattern 来简化繁琐的比较
     abstract class Type { }
 
     abstract class VarType : Type { }
 
+    /// <summary> 原子类型，包括整数、浮点数和布尔 </summary>
+    /// <remarks> 这里我们尝试拿 singleton design pattern 来简化繁琐的比较。 </remarks>
     abstract class AtomicType : VarType
     {
         public static AtomicType FromString(string s)
         {
-            switch(s)
+            switch (s)
             {
-                case "int": case "integer":
+                case "int":
+                case "integer":
                     return IntType.Get();
-                case "float": case "real":
+                case "float":
+                case "real":
                     return FloatType.Get();
-                case "bool": case "boolean":
+                case "bool":
+                case "boolean":
                     return BoolType.Get();
                 default:
                     throw new ArgumentException($"Failed to parse {s} as an atomic type, which is neither int/integer, float/real nor bool/boolean.");
@@ -184,10 +198,11 @@ namespace cminor
         }
     }
 
-    // 尽管 PredType 和 FunType 似乎有一点类似，
-    // 但我们还是应该将其分开处理。
-    // 毕竟在我们的设计里，谓词只能在 annotation 里调用，
-    // 它不能被视为一个 function，不是嘛？
+    /// <summary> 谓词类型（可以近似理解为一个 inline logic function） </summary>
+    /// <remarks>
+    /// 尽管 <c>PredType</c> 和 <c>FunType</c> 似乎有一点类似，但我们还是应该将其分开处理。
+    /// 毕竟在我们的设计里，谓词只能在 annotation 里调用，它不能被视为一个 function，不是嘛？
+    /// </remarks>
     sealed class PredType : Type
     {
         public List<VarType> paraTypes;

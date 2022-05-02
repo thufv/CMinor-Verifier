@@ -10,9 +10,7 @@ using CommandLine.Text;
 
 namespace cminor
 {
-    /// <summary>
-    /// The main class of the whole verifying compiler.
-    /// </summary>
+    /// <summary> 整个验证工具的入口类 </summary>
     class Program
     {
         class Options
@@ -43,20 +41,23 @@ namespace cminor
             }
         }
 
-        /// <summary>
-        /// The main method of the whole verifying compiler.
-        /// </summary>
+        /// <summary> 整个验证工具的入口函数 </summary>
         static void Main(string[] args)
         {
             CommandLine.Parser.Default.ParseArguments<Options>(args)
                 .WithParsed(RunOptions);
         }
 
-        // 返回码的设计是这样的：
-        //  0 表示验证成功
-        //  1 表示验证失败
-        //  2 表示语义错误
-        //  3 表示语法错误
+        /// <summary> 整个验证工具的主驱动函数 </summary>
+        /// <remarks>
+        /// 返回码的设计是这样的：
+        /// <list type="bullet">
+        ///     <item> 0 表示验证成功 </item>
+        ///     <item> 1 表示验证失败 </item>
+        ///     <item> 2 表示语义错误 </item>
+        ///     <item> 3 表示语法错误 </item>
+        /// </list>
+        /// </remarks>
         static void RunOptions(Options opts)
         {
             try
@@ -95,10 +96,12 @@ namespace cminor
                 }
 
                 Verifier verifier = new Verifier(Console.Out);
+
                 int result = verifier.Apply(cfg);
                 if (result > 0) Console.WriteLine("VERIFIED");
                 else if (result == 0) Console.WriteLine("UNKNOWN");
                 else if (result < 0) Console.WriteLine("UNVERIFIED");
+
                 Environment.Exit(0);
             }
             catch (ParsingException e)

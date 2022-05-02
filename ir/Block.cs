@@ -5,6 +5,7 @@ using System.Diagnostics.Contracts;
 
 namespace cminor
 {
+    /// <summary> 用于表示“程序块”的抽象类。 </summary>
     abstract class Block
     {
         public LinkedList<Block> predecessors = new LinkedList<Block>();
@@ -61,6 +62,7 @@ namespace cminor
         }
     }
 
+    /// <summary> 基本块 </summary>
     sealed class BasicBlock : Block
     {
         static int numberCounter = 0;
@@ -110,6 +112,7 @@ namespace cminor
         public override string ToString() => $"_POSTCOND#{number}";
     }
 
+    /// <summary> 用于表示“头”（循环头以及函数头）的程序块的抽象类。 </summary>
     abstract class HeadBlock : Block
     {
         public List<Expression> rankingFunctions = new List<Expression>();
@@ -121,6 +124,7 @@ namespace cminor
         abstract protected void PrintRankingFunction(TextWriter writer);
     }
 
+    /// <summary> 前置条件块，或者说函数头块，里面包括前置条件和秩函数。 </summary>
     sealed class PreconditionBlock : HeadBlock
     {
         public List<Expression> conditions = new List<Expression>();
@@ -165,6 +169,7 @@ namespace cminor
         public override string ToString() => $"_PRECOND#{number}";
     }
 
+    /// <summary> 循环头块，其中包括循环不变式和秩函数。 </summary>
     sealed class LoopHeadBlock : HeadBlock
     {
         // 这里的 statements 是用来算 condition 的！

@@ -1,3 +1,11 @@
+/*
+    这里是生成 annotation 的逻辑，需要生成的 annotation 包括：
+    - precondition
+    - postcondition
+    - ranking function
+    - assertion
+*/
+
 using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -23,7 +31,7 @@ namespace cminor
             return null;
         }
 
-        PreconditionBlock 
+        PreconditionBlock
         CalcPreconditionBlock([NotNull] CMinorParser.RequiresClauseContext[] requiresClauseContexts, CMinorParser.DecreasesClauseContext? decreasesClauseContext)
         {
             List<Expression> conditions = requiresClauseContexts.Select(

@@ -5,6 +5,19 @@ using System.Diagnostics.Contracts;
 
 namespace cminor
 {
+    /**
+        <summary> 用来刻画语句的抽象类 </summary>
+        <remarks>
+        我们支持五种语句：
+        <list type="bullet">
+            <item> <c>VariableAssignStatement</c>：对一个局部变量赋值 </item>
+            <item> <c>SubscriptAssignStatement</c>：对数组中的一个元素赋值 </item>
+            <item> <c>FunctionCallStatement</c>：函数调用 </item>
+            <item> <c>AssertStatement</c>：包括在 CMinor 中显式写出的 assertion 和 runtime assertion </item>
+            <item> <c>AssumeStatement</c>：只能出现在块首，表示进入这个块需要满足的条件，即控制流结构（分支及循环）的守卫条件 </item>
+        </list>
+        </remarks>
+    */
     abstract class Statement
     {
         // A globally unique integer

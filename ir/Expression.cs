@@ -8,6 +8,12 @@ using System.Diagnostics.Contracts;
 
 namespace cminor
 {
+    /**
+        <summary>
+        我们统一来处理表达式，既包括 C 里的表达式，也包括 ACSL 里的表达式。
+        其支持三个基本功能：打印（Print）、替换（Substitute）、求表达式中的自由变量（GetFreeVariables）。
+        </summary>
+     */
     abstract class Expression
     {
         public VarType type { get; protected set; } = default!;
@@ -251,7 +257,7 @@ namespace cminor
     {
         public Expression cond;
         public Expression thenExpr, elseExpr;
-        
+
         public ITEExpression(Expression cond, Expression thenExpr, Expression elseExpr)
         {
             Debug.Assert(cond.type is BoolType);
@@ -373,7 +379,8 @@ namespace cminor
             return fvs;
         }
 
-        public static BinaryExpression FromOp(string op, Expression le, Expression re) {
+        public static BinaryExpression FromOp(string op, Expression le, Expression re)
+        {
             foreach (System.Type type in typeof(BinaryExpression).Assembly.GetTypes())
                 if (type.IsSubclassOf(typeof(BinaryExpression)))
                 {
@@ -712,7 +719,7 @@ namespace cminor
             this.re = re;
         }
     }
-    
+
     sealed class PredicateCallExpression : Expression
     {
         public Predicate predicate;

@@ -7,18 +7,21 @@ using Microsoft.Z3;
 
 namespace cminor
 {
+    /// <summary> 对 Z3 求解器的一层封装 </summary>
     class Z3Solver
     {
         Context ctx = new Context(new Dictionary<string, string>() {
             { "model", "true" }
         });
 
-        public Z3Solver() {
+        public Z3Solver()
+        {
             Microsoft.Z3.Global.SetParameter("parallel.enable", "false");
         }
 
-        // 如果是 valid，那么就返回 null；
-        // 否则的话，返回一个 counter model。
+        /// <summary> 对逻辑表达式的有效性的检查。 </summary>
+        /// <param name="expression"> 待检查有效性的逻辑表达式 </param>
+        /// <returns> 如果表达式有效，那么就返回 null；否则的话，返回一个反例模型。</returns>
         public CounterModel? CheckValid(Expression expression)
         {
             Solver solver = ctx.MkSolver();
@@ -45,8 +48,8 @@ namespace cminor
             }
         }
 
-        // 注意我们的 constant 其实需要对应到 z3 里的 numeral，
-        // 我们的 variable 需要对应到 z3 里的 const。
+        /// <summary> 把我们的 IR 里的表达式转成 Z3 里的表达式 </summary>
+        /// <remarks> 注意我们的 constant 其实需要对应到 z3 里的 numeral，我们的 variable 需要对应到 z3 里的 const。</remarks>
         Expr ExpressionToZ3Expr(Expression e)
         {
             switch (e)
@@ -117,7 +120,7 @@ namespace cminor
                         Expr elseExpr = ExpressionToZ3Expr(itee.elseExpr);
 
                         Debug.Assert(cond is BoolExpr);
-                        
+
                         return ctx.MkITE((BoolExpr)cond, thenExpr, elseExpr);
                     }
                 case NotExpression ne:
@@ -174,7 +177,8 @@ namespace cminor
                                         );
                                     }
                                 }
-                                else {
+                                else
+                                {
                                     if (le is RealExpr lr)
                                         if (re is RealExpr rr)
                                             return ctx.MkDiv(lr, rr);
@@ -191,12 +195,12 @@ namespace cminor
                                 // le > 0 ? (re > 0 ? (le mod re): (le mod -re) : (re > 0 ? -(le mod re): -(le mod -re))
                                 return ctx.MkITE(
                                     ctx.MkGt((IntExpr)le, ctx.MkInt(0)),
-                                    (IntExpr) ctx.MkITE(
+                                    (IntExpr)ctx.MkITE(
                                         ctx.MkGt((IntExpr)re, ctx.MkInt(0)),
                                         ctx.MkMod((IntExpr)le, (IntExpr)re),
                                         ctx.MkMod((IntExpr)le, (IntExpr)ctx.MkUnaryMinus((IntExpr)re))
                                     ),
-                                    (IntExpr) ctx.MkITE(
+                                    (IntExpr)ctx.MkITE(
                                         ctx.MkGt((IntExpr)re, ctx.MkInt(0)),
                                         ctx.MkUnaryMinus(ctx.MkMod((IntExpr)le, (IntExpr)re)),
                                         ctx.MkUnaryMinus(ctx.MkMod((IntExpr)le, (IntExpr)ctx.MkUnaryMinus((IntExpr)re)))

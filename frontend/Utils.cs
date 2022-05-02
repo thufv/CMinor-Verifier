@@ -10,6 +10,7 @@ using Antlr4.Runtime.Misc;
 namespace cminor
 {
     // 如果是专属于某一部分的 util method，就放到直接放到它的那个文件里吧QAQ
+
     partial class CFGGenerator : CMinorParserBaseVisitor<Expression?>
     {
         VarType CalcType(string type, bool isArray)
@@ -41,7 +42,7 @@ namespace cminor
             if (symbolTables.Peek().ContainsKey(name))
                 throw new ParsingException(context, $"duplicate declared variable {name}");
             string varname = counter.GetVariable(name);
-            
+
             LocalVariable variable;
             if (type is StructType st)
             {
@@ -179,9 +180,11 @@ namespace cminor
                 throw new ParsingException(context, $"try to use a void expression.");
         }
 
-        // 把一个表达式压缩成一个变量。
-        // 也就是说，添加一个辅助变量用来表示这个表达式，
-        // 然后传回一个只有一个变量的表达式。
+        /// <summary> 把一个表达式压缩成一个变量 </summary>
+        /// <remarks> 也就是说，添加一个辅助变量用来表示这个表达式，然后传回一个只有一个变量的表达式。 </remarks>
+        /// <param name="expression"> 待压缩的表达式 </param>
+        /// <param name="getName"> 用于获取辅助变量的名字的函数 </param>
+        /// <returns> 由这压缩成的变量单独构成的表达式 </returns>
         VariableExpression CompressedExpression(Expression expression, Func<string> getName)
         {
             if (expression is VariableExpression ve)
@@ -203,7 +206,7 @@ namespace cminor
             }
         }
 
-        // 从 Counter 里得到的所有数字都是全局唯一的
+        /// <summary> 一个用来作 alpha renaming 的辅助类，从 Counter 里得到的所有变量名都是全局唯一的。 </summary>
         public class Counter
         {
             // 这个是用来作 alpha renaming 的，每个 function 会清空一次

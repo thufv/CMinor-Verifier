@@ -13,7 +13,6 @@ namespace cminor
 
         public List<Expression> tailConditions = new List<Expression>();
 
-        // null 表示没有啦
         public List<Expression> tailRankingFunctions = new List<Expression>();
 
         [ContractInvariantMethod]
