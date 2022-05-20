@@ -22,6 +22,9 @@ namespace cminor
             return z3Solver.CheckValid(expression);
         }
 
+        /// <summary> 在 SMT solver 中定义谓词 </summary>
+        /// <param name="predicate"> 待定义的谓词 </param>
+        /// <remarks> 目前我们只允许一个表达式作为谓词，而且谓词不允许递归调用。 </remarks>
         public void definePredicate(Predicate predicate)
         {
             z3Solver.definePredicate(predicate);
