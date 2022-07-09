@@ -197,6 +197,7 @@ assume !_cond$1        assume _cond$1          |
 - 我们为大家在 git.tsinghua 配置了 CI（Continuous Integration, 持续集成），大家可以很方便地于其上测试公开测例。
 - 报告请以 markdown 书写，并作为文件 `report.md` 置于你的项目的根目录下。
 - 我们会以 DDL 前最后一次有效的（即可以完整地跑下来 CI） commit 为准，公开测例的得分可以直接在 CI 中看到，隐藏测例及报告的得分将会在后续公布。
+- 注意：请将代码及报告放到 master 分支下。
 
 ## 参考教材
 
