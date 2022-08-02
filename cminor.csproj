@@ -16,7 +16,7 @@
     </PackageReference>
     <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
-    <PackageReference Include="Microsoft.Z3.x64" Version="4.8.10" />
+    <PackageReference Include="Microsoft.Z3" Version="4.8.10" />
   </ItemGroup>
 
 </Project>
