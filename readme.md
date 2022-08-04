@@ -1,4 +1,6 @@
-![Score Calculator](https://byob.yarr.is/thufv/CMinor/score)
+![Error when building and testing](https://byob.yarr.is/thufv/CMinor/score)
+
+> 注：以上显示的得分需要等待每次 push 所触发的 GitHub Action 执行完毕后才会被更新。
 
 ## 简介
 
@@ -51,6 +53,11 @@ dotnet run -- --source <path>
 --version     Display version information.
 ```
 
+## 自动测试
+
+我们不再使用传统的 OJ 来提交代码，而是用 [GitHub Actions](https://github.com/features/actions) 将自动化测试直接集成进项目中。
+简而言之，你的每一次 push 都相当于自动提交了代码，会触发一个名为 `Build and Test` 的 job，其会构建项目并评测所有测例，并将得分（百分制）显示在 readme 开头。
+
 ## 结构
 
 该编译器的设计可以分为三个部分：
@@ -74,3 +81,4 @@ CMinor 语言大致是以下语言标准的子集：
 
 - Standard C: [ISO/IEC 9899:2018, aka C17 or C18](https://web.archive.org/web/20181230041359if_/http://www.open-std.org/jtc1/sc22/wg14/www/abq/c17_updated_proposed_fdis.pdf)
 - ANSI/ISO C Speicication Language: [ACSL v1.17](https://frama-c.com/download/acsl-1.17.pdf)
+
