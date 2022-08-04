@@ -1,3 +1,5 @@
+![Score Calculator](https://byob.yarr.is/thufv/CMinor/score)
+
 ## 简介
 
 这是一个 CMinor 的验证工具，是一个小型的教学版的 [Frama-C](https://frama-c.com/)。

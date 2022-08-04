@@ -18,4 +18,28 @@ jobs:
       run: dotnet build -c Release
     - name: Test
       run: python3 testcases/test.py
+    - name: Fetch the score
+      # We've saved the score into `.score` file, from which we fetch the score again.
+      id: score
+      run: echo "##[set-output name=data;]$(cat .score)"
+    # We follow the palette of OJ (http://codeforces.com/problemset/status)
+    # The badge is green if the score is full, blue otherwise.
+    - name: Score badge
+      if: ${{ steps.score.outputs.data == '100' }}
+      uses: RubbaBoy/BYOB@v1.3.0
+      with:
+        NAME: score
+        LABEL: 'score'
+        STATUS: ${{ steps.score.outputs.data }}
+        COLOR: 00A
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Score badge
+      if: ${{ steps.score.outputs.data != '100' }}
+      uses: RubbaBoy/BYOB@v1.3.0
+      with:
+        NAME: score
+        LABEL: 'score'
+        STATUS: ${{ steps.score.outputs.data }}
+        COLOR: 0A0
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
