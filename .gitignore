@@ -372,3 +372,6 @@ Properties/
 
 # Binary of C++
 *.out
+
+# The score of CMinor verifier
+.score
