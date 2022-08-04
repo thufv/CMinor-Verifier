@@ -17,7 +17,7 @@ jobs:
     - name: Install dependencies of Python
       run: pip3 install -r testcases/requirements.txt
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore -c Release
     - name: Test
       run: python3 testcases/test.py
 
