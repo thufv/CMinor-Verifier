@@ -1,4 +1,4 @@
 [submodule "testcases"]
 	path = testcases
-	url = git@git.tsinghua.edu.cn:software-verification-22/cminor-testcases.git
+	url = git@github.com:thufv/CMinor-testcases.git
 	branch = master
