@@ -8,6 +8,8 @@
 - 对于给定的带有部分正确性验证标注和秩函数的输入程序源码，能够返回其**完全正确性**验证的结果。
 - 完成工具报告，大致描述你的实现过程、过程中遇到的问题以及解决方式。
 
+推荐实现的验证算法为**演绎验证**，其在参考教材 *The Calculus of Computation: Decision Procedures with Applications to Verification* 的第五章 *Program Correctness: Mechanics* 中有详尽的介绍。
+
 ## 输入和输出
 
 以下是对本次大作业所需实现的程序验证工具的输入和输出的描述。
@@ -163,42 +165,13 @@ assume !_cond$1        assume _cond$1          |
 
 ## 附加任务
 
-对于本次课程大作业而言，我们鼓励感兴趣的同学在学有余力的同时，完成一些更加进阶的验证算法。比如：
+我们鼓励感兴趣的同学在学有余力的同时，完成一些更加进阶的验证算法。比如：
 
 - [BMC 算法](https://zhuanlan.zhihu.com/p/318446383)
 - [可递归逻辑函数](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/krml250.pdf)
 - [谓词抽象算法](https://zhuanlan.zhihu.com/p/332406712)
 - 其他自选题目...
 
-有兴趣的同学请联系助教确定选题。对于最终完成选题的作业，将会视情况给出 0-5 分的额外加分。
-
-## 分数设置
-
-本次大作业占总评的 30 分。
-
-分值分配
-- 报告：6
-- 部分正确性：21
-  - 公开测例：16.8
-  - 隐藏测例：4.2
-- 完全正确性：3
-  - 公开测例：2.4
-  - 隐藏测例：0.6
-- 附加任务：0-5 分
-
-隐藏测例会占所有测例的 20% 的分数，保证隐藏测例只是对公开测例作微小的改动所得。你可以认为只要你完整地实现了演绎验证算法，那么你几乎不可能会有不通过的隐藏测例。
-
-如果被检查出雷同，则直接以 0 分处理。
-
-## 提交方式
-
-- 本次作业的 DDL 是第十八周周五（6 月 24 日）。
-  - 对于毕业班同学，DDL 为第十六周周日（6 月 12 日）。
-- 我们为大家在 git.tsinghua 配置了 CI（Continuous Integration, 持续集成），大家可以很方便地于其上测试公开测例。
-- 报告请以 markdown 书写，并作为文件 `report.md` 置于你的项目的根目录下。
-- 我们会以 DDL 前最后一次有效的（即可以完整地跑下来 CI） commit 为准，公开测例的得分可以直接在 CI 中看到，隐藏测例及报告的得分将会在后续公布。
-- 注意：请将代码及报告放到 master 分支下。
-
 ## 参考教材
 
-Chapter 5 of *The Calculus of Computation: Decision Procedures with Applications to Verification*
+*The Calculus of Computation: Decision Procedures with Applications to Verification*
