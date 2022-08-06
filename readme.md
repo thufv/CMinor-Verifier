@@ -73,6 +73,15 @@ API 文档在 `./api-doc/`，打开 `./api-doc/index.html` 即可浏览。
 
 如果想要更新 API 文档的话，你需要使用 [doxygen](https://www.doxygen.nl/index.html)，并在本项目根目录下运行 `doxygen`。
 
+## 贡献者
+
+ * [谢兴宇](https://github.com/namasikanam)
+ * [陈建辉](https://www.zhihu.com/people/yan-jing-ye-35)
+ * [徐荣琛](https://xurongchen.github.io/)
+ * [刘江宜](https://github.com/panda2134)
+ * [孙志航](https://github.com/Misasasa)
+ * [贺飞](https://feihe.github.io/)
+
 ## 参考
 
 CMinor 语言大致是以下语言标准的子集：
