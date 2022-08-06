@@ -1,6 +1,6 @@
 ![Error when building and testing](https://byob.yarr.is/thufv/CMinor/score)
 
-> 注：以上显示的得分需要等待每次 push 所触发的 GitHub Action 执行完毕后才会被更新。
+> 注：请在 fork 后将上面的 URL 中的 `thufv` 替换为你的 username。以上显示的得分需要等待每次 push 所触发的 GitHub Action 执行完毕后才会被更新。
 
 ## 简介
 
@@ -8,7 +8,7 @@
 
 本次大作业你需要实现本工具中的核心验证算法部分，具体的说明请见[任务说明文档](task-doc.md)。
 
-本项目使用 [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) 来集成公开测例仓库，在 clone 后请使用 `git submodule update --remote` 更新。
+本项目使用 [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules) 来集成公开测例仓库，在 clone 后可以使用 `git submodule update --remote` 来更新测例仓库。
 
 ## 安装
 
