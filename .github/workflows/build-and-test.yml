@@ -21,12 +21,12 @@ jobs:
     - name: Fetch the score
       # We've saved the score into `.score` file, from which we fetch the score again.
       id: score
-      run: echo "##[set-output name=data;]$(cat .score)"
       # We follow the palette of OJ (http://codeforces.com/problemset/status)
       # The badge is green if the score is full, blue otherwise.
-      run: echo "##[set-output name=color;]$(score=$(cat .score) && [[ $score == '100.0' ]] && echo '0A0' || echo '00A')"
+      run: |
+        echo "##[set-output name=data;]$(cat .score)"
+        echo "##[set-output name=color;]$(score=$(cat .score) && [[ $score == '100.0' ]] && echo '0A0' || echo '00A')"
     - name: Score badge
-      if: ${{ steps.score.outputs.data == '100' }}
       uses: RubbaBoy/BYOB@v1.3.0
       with:
         NAME: score
@@ -34,13 +34,3 @@ jobs:
         STATUS: ${{ steps.score.outputs.data }}
         COLOR: ${{ steps.score.outputs.color }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Score badge
-      if: ${{ steps.score.outputs.data != '100' }}
-      uses: RubbaBoy/BYOB@v1.3.0
-      with:
-        NAME: score
-        LABEL: 'score'
-        STATUS: ${{ steps.score.outputs.data }}
-        COLOR: ${{ steps.score.outputs.color }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
