@@ -4,7 +4,7 @@
 
 ## 简介
 
-本项目是一个 CMinor 的验证工具，CMinor 是一个面向验证的教学语言，其包括源程序和验证标注两部分，其中源程序部分大致是 C 语言的子集，验证标注部分大致是 [ACSL (ANSI/ISO C Specification Language)](https://frama-c.com/html/acsl.html) 的子集。从 C 语言的角度来看，验证标注是写在注释中的，不会影响 C 代码通常的编译和运行。
+本项目为 2022 年春季学期清华大学《软件分析与验证》课程的大作业，作业平台提供了一个 CMinor 的验证框架，你需要在其中实现核心的验证算法。CMinor 是一个面向验证的教学语言，其包括源程序和验证标注两部分，其中源程序部分大致是 C 语言的子集，验证标注部分大致是 [ACSL (ANSI/ISO C Specification Language)](https://frama-c.com/html/acsl.html) 的子集。从 C 语言的角度来看，验证标注是写在注释中的，不会影响 C 代码通常的编译和运行。
 
 本次大作业你需要实现本工具中的核心验证算法部分，具体的说明请见[任务说明文档](task-doc.md)。
 
