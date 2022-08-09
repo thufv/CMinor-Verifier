@@ -79,7 +79,7 @@ API 文档在 `./api-doc/`，打开 `./api-doc/index.html` 即可浏览。
  * [陈建辉](https://www.zhihu.com/people/yan-jing-ye-35)
  * [徐荣琛](https://xurongchen.github.io/)
  * [刘江宜](https://github.com/panda2134)
- * [孙志航](https://github.com/Misasasa)
+ * [孙志航](https://www.pixiv.net/users/73044167)
  * [贺飞](https://feihe.github.io/)
 
 ## 参考
