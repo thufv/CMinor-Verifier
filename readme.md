@@ -1,7 +1,3 @@
-![Error when building and testing](https://byob.yarr.is/thufv/CMinor/score)
-
-> 注：请在 fork 后将上面的 URL 中的 `thufv` 替换为你的 username。以上显示的得分需要等待每次 push 所触发的 GitHub Action 执行完毕后才会被更新。
-
 ## 简介
 
 本项目为 2022 年春季学期清华大学《软件分析与验证》课程的大作业，作业平台提供了一个 CMinor 的验证框架，你需要在其中实现核心的验证算法。CMinor 是一个面向验证的教学语言，其包括源程序和验证标注两部分，其中源程序部分大致是 C 语言的子集，验证标注部分大致是 [ACSL (ANSI/ISO C Specification Language)](https://frama-c.com/html/acsl.html) 的子集。从 C 语言的角度来看，验证标注是写在注释中的，不会影响 C 代码通常的编译和运行。
@@ -51,10 +47,17 @@ dotnet run -- --source <path>
 --version     Display version information.
 ```
 
-## 自动测试
+## 评测方式
 
 我们不再使用传统的 OJ 来提交代码，而是用 [GitHub Actions](https://github.com/features/actions) 将自动化测试直接集成进项目中。
-简而言之，你的每一次 push 都相当于自动提交了代码，会触发一个名为 `Build and Test` 的 job，其会构建项目并评测所有测例，并将得分（百分制）显示在 readme 开头。
+简而言之，你的每一次 push 都相当于自动提交了代码，会触发一个名为 `Build and Test` 的 job，其会构建项目并评测所有测例，其得分（百分制）为：
+
+![Error when building and testing](https://byob.yarr.is/thufv/CMinor/score)
+
+> 注1：请在 fork 后将上面的 URL 中的 `thufv` 替换为你的用户名。
+
+> 注2：以上显示的得分需要等待每次 push 所触发的 GitHub Action 执行完毕后才会被更新。
+
 
 ## 结构
 
