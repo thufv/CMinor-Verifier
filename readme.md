@@ -72,9 +72,9 @@ dotnet run -- --source <path>
 
 ## API 文档
 
-API 文档在 `./api-doc/`，打开 `./api-doc/index.html` 即可浏览。
+如需阅读 API 文档，你可以使用 [doxygen](https://www.doxygen.nl/index.html)，在本项目根目录下运行 `doxygen` 即可生成。
 
-如果想要更新 API 文档的话，你需要使用 [doxygen](https://www.doxygen.nl/index.html)，并在本项目根目录下运行 `doxygen`。
+所生成的 API 文档在 `./api-doc/`，打开 `./api-doc/index.html` 即可浏览。
 
 ## 贡献者
 
