@@ -75,7 +75,7 @@ namespace cminor
             Visit(context);
 
             // 这里我们做一个检查（约定）：ranking function 的数量在每个函数头和循环头都是相等的。
-            int rankingFunctionNum = -1; // -1 means unkown, 0 means non-existence, 1 means existence
+            int rankingFunctionNum = -1; // -1 means unknown, 0 means non-existence, 1 means existence
             foreach (Function function in functionTable.Values)
             {
                 if (rankingFunctionNum == -1)
