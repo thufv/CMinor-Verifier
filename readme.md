@@ -88,4 +88,4 @@ dotnet run -- --source <path>
 CMinor 语言大致是以下语言标准的子集：
 
 - Standard C: [ISO/IEC 9899:2018, aka C17 or C18](https://web.archive.org/web/20181230041359if_/http://www.open-std.org/jtc1/sc22/wg14/www/abq/c17_updated_proposed_fdis.pdf)
-- ANSI/ISO C Speicication Language: [ACSL v1.17](https://frama-c.com/download/acsl-1.17.pdf)
+- ANSI/ISO C Specification Language: [ACSL v1.17](https://frama-c.com/download/acsl-1.17.pdf)
